@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, type ErrorBoundaryProps, useRouter } from 'expo-router';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,8 @@ import { useFonts } from 'expo-font';
 import { hideSplashScreen } from '@utils/splashScreenManager';
 import { useTheme } from '@providers/ThemeProvider';
 import { ThemedCustomText, ThemedButton } from '@components/themed';
+import { useBackHandler } from '../hooks/useBackHandler';
+import { MemoryDiagnosticsOverlay } from '../components/MemoryDiagnosticsOverlay';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -46,19 +48,16 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  useEffect(() => {
-    const backAction = () => {
-      if (router.canGoBack()) {
-        router.back();
-        return true;
-      }
-      return false;
-    };
+  const backAction = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return true;
+    }
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-
-    return () => backHandler.remove();
+    return false;
   }, [router]);
+
+  useBackHandler(backAction);
 
   if (!loaded && !error) {
     return null;
@@ -84,6 +83,7 @@ export default function RootLayout() {
             statusBarStyle: isDark ? 'light' : 'dark',
           }}
         />
+        <MemoryDiagnosticsOverlay />
       </SafeAreaView>
     </SafeAreaProvider>
   );
