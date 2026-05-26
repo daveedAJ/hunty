@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { checkRegistrationStatus } from "@/lib/contracts/player-registration";
 import type { RegistrationStatus } from "@/lib/types";
 import { RegistrationButton } from "@/components/RegistrationButton";
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayInterfaceGuardProps {
   huntId: number;

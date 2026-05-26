@@ -60,7 +60,7 @@ describe("PlayGame", () => {
       />
     )
 
-    expect(screen.getByText("Loading clues...")).toBeInTheDocument()
+    expect(document.querySelector(".animate-pulse")).toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getByText("Network Error")).toBeInTheDocument()

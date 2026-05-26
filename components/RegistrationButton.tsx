@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { RegistrationStatus } from "@/lib/types";
 
 interface RegistrationButtonProps {

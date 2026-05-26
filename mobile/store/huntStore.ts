@@ -99,105 +99,110 @@ async function writeHunts(hunts: StoredHunt[]): Promise<void> {
   }
 }
 
+/** Active hunts for the home feed (excludes private hunts). */
+export async function getActiveHuntsForFeed(): Promise<StoredHunt[]> {
+  const hunts = await readHunts();
+  return hunts.filter((h) => h.status === "Active" && !h.is_private);
+}
+
 /** All hunts (for Game Arcade: filter by status === "Active"). Private hunts are excluded. */
-export function getAllHunts(): StoredHunt[] {
-  return readHunts().filter((h) => !h.is_private);
+export async function getAllHunts(): Promise<StoredHunt[]> {
+  const hunts = await readHunts();
+  return hunts.filter((h) => !h.is_private);
 }
 
 /** All hunts including private ones (for creator dashboard). */
-export function getAllHuntsIncludingPrivate(): StoredHunt[] {
+export async function getAllHuntsIncludingPrivate(): Promise<StoredHunt[]> {
   return readHunts();
 }
 
 /** Creator hunts for dashboard (all stored hunts including private; creator filter can be added later). */
-export function getCreatorHunts(): StoredHunt[] {
+export async function getCreatorHunts(): Promise<StoredHunt[]> {
   return readHunts();
 }
 
 /** Get hunts for a creator (creator public-key filter not implemented yet; returns all hunts). */
-export function getHuntsByCreator(): StoredHunt[] {
+export async function getHuntsByCreator(): Promise<StoredHunt[]> {
   return readHunts();
 }
 
 /** Update a hunt's status (e.g. Draft → Active after activate_hunt). */
-export function updateHuntStatus(huntId: number, status: HuntStatus): void {
-  const hunts = readHunts().map((h) => (h.id === huntId ? { ...h, status } : h));
-  writeHunts(hunts);
+export async function updateHuntStatus(huntId: number, status: HuntStatus): Promise<void> {
+  const hunts = (await readHunts()).map((h) => (h.id === huntId ? { ...h, status } : h));
+  await writeHunts(hunts);
 }
 
 /** Delete multiple hunts by IDs. */
-export function deleteHunts(ids: number[]): void {
-  const hunts = readHunts().filter((h) => !ids.includes(h.id));
-  writeHunts(hunts);
-  
-  // Also clean up clues for these hunts
-  const allClues = readClues();
+export async function deleteHunts(ids: number[]): Promise<void> {
+  const hunts = (await readHunts()).filter((h) => !ids.includes(h.id));
+  await writeHunts(hunts);
+
+  const allClues = await readClues();
   const remainingClues = allClues.filter((c) => !ids.includes(c.huntId));
-  writeClues(remainingClues);
+  await writeClues(remainingClues);
 }
 
 /** Archive (Cancel) multiple hunts by IDs. */
-export function archiveHunts(ids: number[]): void {
-  const hunts = readHunts().map((h) => 
+export async function archiveHunts(ids: number[]): Promise<void> {
+  const hunts = (await readHunts()).map((h) =>
     ids.includes(h.id) ? { ...h, status: "Cancelled" as HuntStatus } : h
   );
-  writeHunts(hunts);
+  await writeHunts(hunts);
 }
 
 /** Get a single hunt by ID */
-export function getHuntById(id: number): StoredHunt | undefined {
-  return readHunts().find((h) => h.id === id);
+export async function getHuntById(id: number): Promise<StoredHunt | undefined> {
+  const hunts = await readHunts();
+  return hunts.find((h) => h.id === id);
 }
 
 /** Add a new hunt (e.g. after createHunt). */
-export function addHunt(hunt: StoredHunt): void {
-  const hunts = readHunts();
+export async function addHunt(hunt: StoredHunt): Promise<void> {
+  const hunts = await readHunts();
   if (hunts.some((h) => h.id === hunt.id)) return;
-  writeHunts([...hunts, hunt]);
+  await writeHunts([...hunts, hunt]);
 }
 
 /** Get all clues for a specific hunt. */
-export function getHuntClues(huntId: number): Clue[] {
-  return readClues().filter((c) => c.huntId === huntId);
+export async function getHuntClues(huntId: number): Promise<Clue[]> {
+  const clues = await readClues();
+  return clues.filter((c) => c.huntId === huntId);
 }
 
 /** Persist a new clue locally and increment the hunt's cluesCount. */
-export function saveClueLocally(clue: Omit<Clue, "id">): void {
-  const all = readClues();
+export async function saveClueLocally(clue: Omit<Clue, "id">): Promise<void> {
+  const all = await readClues();
   const newId = all.length > 0 ? Math.max(...all.map((c) => c.id)) + 1 : 1;
-  writeClues([...all, { ...clue, id: newId }]);
-  const hunts = readHunts().map((h) =>
+  await writeClues([...all, { ...clue, id: newId }]);
+  const hunts = (await readHunts()).map((h) =>
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   );
-  writeHunts(hunts);
+  await writeHunts(hunts);
 }
 
 /** Get a single hunt by string ID */
-export const getHunt = (id: string) => {
-  return readHunts().find((c) => c.id === Number(id));
-};
+export async function getHunt(id: string): Promise<StoredHunt | undefined> {
+  const hunts = await readHunts();
+  return hunts.find((c) => c.id === Number(id));
+}
 
 /**
  * Return up to `limit` featured hunts, ranked by a trending score.
  * Score factors: clue count, reward type variety, time remaining, recency.
  */
-export function getFeaturedHunts(limit = 3): StoredHunt[] {
+export async function getFeaturedHunts(limit = 3): Promise<StoredHunt[]> {
   const now = Math.floor(Date.now() / 1000);
-  const active = readHunts().filter((h) => h.status === "Active" && !h.is_private);
+  const active = (await readHunts()).filter((h) => h.status === "Active" && !h.is_private);
 
   const scored = active.map((hunt) => {
     let score = 0;
-    // More clues = higher quality hunt
     score += hunt.cluesCount * 10;
-    // Dual-reward hunts are more attractive
     if (hunt.rewardType === "Both") score += 20;
     else if (hunt.rewardType === "NFT") score += 10;
-    // Hunts ending soon get a boost (urgency)
     if (hunt.endTime) {
       const hoursLeft = (hunt.endTime - now) / 3600;
       if (hoursLeft > 0 && hoursLeft < 48) score += 15;
     }
-    // Recently started hunts get a freshness boost
     if (hunt.startTime) {
       const daysSinceStart = (now - hunt.startTime) / 86400;
       if (daysSinceStart < 3) score += 10;
