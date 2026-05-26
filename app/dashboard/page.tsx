@@ -6,7 +6,14 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
 import { HuntDashboard } from "@/components/HuntDashboard"
-import { getCreatorHunts, updateHuntStatus, saveClueLocally, type StoredHunt } from "@/lib/huntStore"
+import {
+  getCreatorHunts,
+  updateHuntStatus,
+  saveClueLocally,
+  takeHuntStoreSnapshot,
+  restoreHuntStoreSnapshot,
+  type StoredHunt,
+} from "@/lib/huntStore"
 import { activateHunt, addClue } from "@/lib/contracts/hunt"
 import { withTransactionToast } from "@/lib/txToast"
 
@@ -22,33 +29,63 @@ export default function DashboardPage() {
   }, [refresh])
 
   const handleActivate = useCallback(async (huntId: number) => {
-    await withTransactionToast(
-      () => activateHunt(huntId),
-      {
-        loading: "Confirming in Wallet...",
-        submitted: "Transaction Submitted",
-        success: "Hunt activated. It is now visible in the Game Arcade.",
-      }
-    )
+    const snapshot = takeHuntStoreSnapshot()
     updateHuntStatus(huntId, "Active")
-  }, [])
+    refresh()
+
+    try {
+      await withTransactionToast(
+        () => activateHunt(huntId),
+        {
+          loading: "Confirming in Wallet...",
+          submitted: "Transaction Submitted",
+          success: "Hunt activated. It is now visible in the Game Arcade.",
+        }
+      )
+    } catch (error) {
+      restoreHuntStoreSnapshot(snapshot)
+      refresh()
+      throw error
+    }
+  }, [refresh])
 
   const handleSaveClues = useCallback(
     async (huntId: number, clues: { question: string; answer: string; points: number }[]) => {
-      for (const clue of clues) {
-        const normalizedAnswer = clue.answer.trim().toLowerCase()
-        await withTransactionToast(
-          () => addClue(huntId, clue.question.trim(), normalizedAnswer, clue.points),
-          {
-            loading: `Adding clue "${clue.question.trim().slice(0, 30)}..."`,
-            submitted: "Clue submitted",
-            success: "",
-          }
-        )
-        saveClueLocally({ huntId, question: clue.question.trim(), answer: normalizedAnswer, points: clue.points })
+      const snapshot = takeHuntStoreSnapshot()
+      const normalizedClues = clues.map((clue) => ({
+        question: clue.question.trim(),
+        answer: clue.answer.trim().toLowerCase(),
+        points: clue.points,
+      }))
+
+      for (const clue of normalizedClues) {
+        saveClueLocally({
+          huntId,
+          question: clue.question,
+          answer: clue.answer,
+          points: clue.points,
+        })
+      }
+      refresh()
+
+      try {
+        for (const clue of normalizedClues) {
+          await withTransactionToast(
+            () => addClue(huntId, clue.question, clue.answer, clue.points),
+            {
+              loading: `Adding clue "${clue.question.slice(0, 30)}..."`,
+              submitted: "Clue submitted",
+              success: "",
+            }
+          )
+        }
+      } catch (error) {
+        restoreHuntStoreSnapshot(snapshot)
+        refresh()
+        throw error
       }
     },
-    []
+    [refresh]
   )
 
   return (

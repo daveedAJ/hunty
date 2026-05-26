@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { X, ArrowRight, Trophy } from "lucide-react"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Header } from "@/components/Header"
-import { getAllHunts } from "@/lib/huntStore"
+import { getAllHunts, type StoredHunt } from "@/lib/huntStore"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import { hankenGrotesk } from "@/lib/font"
 import OnboardingTour from "@/components/OnboardingTour"
@@ -24,9 +24,20 @@ interface WalletOption {
 
 const walletOptions: WalletOption[] = []
 
-// Active hunts for the public Game Arcade (Draft hunts become visible here after activation).
-function fetchAllHunts() {
-  return getAllHunts().filter((h) => h.status === "Active")
+const INACTIVE_PAGE_SIZE = 6
+
+function sortByRecentFirst(a: StoredHunt, b: StoredHunt): number {
+  const aSortTime = a.endTime ?? a.startTime ?? 0
+  const bSortTime = b.endTime ?? b.startTime ?? 0
+  return bSortTime - aSortTime
+}
+
+function fetchActiveHunts() {
+  return getAllHunts().filter((hunt) => hunt.status === "Active").sort(sortByRecentFirst)
+}
+
+function fetchInactiveHunts() {
+  return getAllHunts().filter((hunt) => hunt.status !== "Active").sort(sortByRecentFirst)
 }
 
 export default function GameArcade() {
@@ -39,9 +50,19 @@ export default function GameArcade() {
   const [walletAddress, setWalletAddress] = useState("")
   const [balance, setBalance] = useState("")
 
-  const [hunts, setHunts] = useState<ReturnType<typeof fetchAllHunts>>([])
+  const [activeHunts, setActiveHunts] = useState<StoredHunt[]>([])
+  const [inactiveHunts, setInactiveHunts] = useState<StoredHunt[]>([])
   const [isLoadingHunts, setIsLoadingHunts] = useState(true)
+  const [visibleInactiveCount, setVisibleInactiveCount] = useState(INACTIVE_PAGE_SIZE)
+  const [isLoadingMoreInactive, setIsLoadingMoreInactive] = useState(false)
   const [activeTab, setActiveTab] = useState<"leaderboard" | "none">("none")
+  const inactiveEndReachedRef = useRef<HTMLDivElement | null>(null)
+
+  const visibleInactiveHunts = useMemo(
+    () => inactiveHunts.slice(0, visibleInactiveCount),
+    [inactiveHunts, visibleInactiveCount]
+  )
+  const hasMoreInactiveHunts = visibleInactiveCount < inactiveHunts.length
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -55,14 +76,49 @@ export default function GameArcade() {
   useEffect(() => {
     let cancelled = false
     try {
-      const active = fetchAllHunts()
-      if (!cancelled) setHunts(active)
+      const active = fetchActiveHunts()
+      const inactive = fetchInactiveHunts()
+      if (!cancelled) {
+        setActiveHunts(active)
+        setInactiveHunts(inactive)
+        setVisibleInactiveCount(INACTIVE_PAGE_SIZE)
+      }
     } catch (error) {
       console.error("Failed to fetch hunts", error)
     } finally {
       if (!cancelled) setIsLoadingHunts(false)
     }
+
+    return () => {
+      cancelled = true
+    }
   }, [])
+
+  const loadMoreInactiveHunts = useCallback(() => {
+    if (!hasMoreInactiveHunts || isLoadingMoreInactive) return
+    setIsLoadingMoreInactive(true)
+    setTimeout(() => {
+      setVisibleInactiveCount((prev) => Math.min(prev + INACTIVE_PAGE_SIZE, inactiveHunts.length))
+      setIsLoadingMoreInactive(false)
+    }, 250)
+  }, [hasMoreInactiveHunts, inactiveHunts.length, isLoadingMoreInactive])
+
+  useEffect(() => {
+    const target = inactiveEndReachedRef.current
+    if (!target || !hasMoreInactiveHunts) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadMoreInactiveHunts()
+        }
+      },
+      { rootMargin: "160px 0px 160px 0px" }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [hasMoreInactiveHunts, loadMoreInactiveHunts, visibleInactiveHunts.length])
 
   const handleWalletSelect = (wallet: WalletOption) => {
     setSelectedWallet(wallet)
@@ -229,7 +285,7 @@ export default function GameArcade() {
               Browse Active Hunts
             </h2>
             <p className="text-sm text-slate-600">
-              {isLoadingHunts ? "Loading hunts..." : `${hunts.length} active ${hunts.length === 1 ? "hunt" : "hunts"} found`}
+              {isLoadingHunts ? "Loading hunts..." : `${activeHunts.length} active ${activeHunts.length === 1 ? "hunt" : "hunts"} found`}
             </p>
           </div>
 
@@ -252,14 +308,14 @@ export default function GameArcade() {
                 </Card>
               ))}
             </div>
-          ) : hunts.length === 0 ? (
+          ) : activeHunts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
               No active hunts available right now.{" "}
               <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hunts.map((hunt) => (
+              {activeHunts.map((hunt) => (
                 <Card
                   key={hunt.id}
                   className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
@@ -294,6 +350,82 @@ export default function GameArcade() {
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Extended Hunt Feed (FlatList-like onEndReached pagination) */}
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl md:text-3xl font-semibold bg-gradient-to-b from-[#6B7280] to-[#1F2937] bg-clip-text text-transparent">
+              Older / Inactive Hunts
+            </h2>
+            <p className="text-sm text-slate-600">
+              {isLoadingHunts
+                ? "Loading archive..."
+                : `${visibleInactiveHunts.length} of ${inactiveHunts.length} loaded`}
+            </p>
+          </div>
+
+          {isLoadingHunts ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <Card
+                  key={`inactive-loading-${idx}`}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                >
+                  <div className="p-5">
+                    <Skeleton className="h-6 w-2/3 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-5/6 mb-4" />
+                    <Skeleton className="h-5 w-24 rounded-full" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : inactiveHunts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
+              No inactive hunts yet.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {visibleInactiveHunts.map((hunt) => (
+                  <Card
+                    key={`inactive-${hunt.id}`}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white/90 shadow-sm"
+                  >
+                    <div className="p-5">
+                      <CardTitle className="text-lg font-semibold mb-2 line-clamp-2">
+                        {hunt.title}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-600 mb-4 line-clamp-3">
+                        {hunt.description}
+                      </CardDescription>
+                      <div className="flex items-center justify-between mt-4">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-700">
+                          {hunt.status}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {hunt.cluesCount} {hunt.cluesCount === 1 ? "clue" : "clues"}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div ref={inactiveEndReachedRef} className="h-1 w-full" />
+
+              {isLoadingMoreInactive && (
+                <p className="text-center text-sm text-slate-500 mt-4">Loading more hunts...</p>
+              )}
+
+              {!hasMoreInactiveHunts && visibleInactiveHunts.length > 0 && (
+                <p className="text-center text-sm text-slate-500 mt-4">
+                  You&apos;ve reached the end of the hunt archive.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

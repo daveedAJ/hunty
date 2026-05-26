@@ -1,6 +1,7 @@
-import Server, { TransactionBuilder, Networks, Operation } from "@stellar/stellar-sdk"
+import Server, { TransactionBuilder, Networks, Operation, Account } from "@stellar/stellar-sdk"
 import { getHunt as getStoredHunt, getHuntClues } from "@/lib/huntStore"
 import { parseStellarError } from "@/lib/stellarErrors"
+import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
 
 export type ClueInfo = {
   id: number
@@ -141,7 +142,7 @@ export async function createHunt(
   }
 
   // Load account state
-  const account = await server.getAccount(publicKey)
+  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
 
   // Use manageData to carry the payload. In production you'd call the
   // Soroban contract (invoke host function) — this is a minimal signing flow
@@ -169,7 +170,9 @@ export async function createHunt(
   }
 
   // Submit signed transaction XDR to RPC
-  const res = await server.submitTransaction(signedXdr)
+  const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
+  }
   if (!res || !res.hash) throw new Error("Transaction submission failed")
 
   return { txHash: res.hash }
@@ -213,7 +216,7 @@ export async function activateHunt(huntId: number): Promise<ActivateHuntResult> 
     throw new Error("Unable to obtain public key from wallet; ensure you are connected.")
   }
 
-  const account = await server.getAccount(publicKey)
+  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
   const payload = JSON.stringify({ action: "activate_hunt", hunt_id: huntId })
   const key = `activate_hunt:${Date.now()}`
   const op = Operation.manageData({ name: key, value: payload })
@@ -236,7 +239,9 @@ export async function activateHunt(huntId: number): Promise<ActivateHuntResult> 
     throw new Error("No signing method available. Install Freighter or Soroban Wallet.")
   }
 
-  const res = await server.submitTransaction(signedXdr)
+  const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
+  }
   if (!res?.hash) throw new Error("Transaction submission failed")
   return { txHash: res.hash }
 }
@@ -286,7 +291,7 @@ export async function addClue(
 
   const normalizedAnswer = answer.trim().toLowerCase()
 
-  const account = await server.getAccount(publicKey)
+  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
   const payload = JSON.stringify({
     action: "add_clue",
     hunt_id: huntId,
@@ -320,7 +325,9 @@ export async function addClue(
     throw new Error("No signing method available. Install Freighter or Soroban Wallet.")
   }
 
-  const res2 = await server.submitTransaction(signedXdr)
+  const res2 = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
+  }
   if (!res2?.hash) throw new Error("Transaction submission failed")
   return { txHash: res2.hash }
 }

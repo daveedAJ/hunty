@@ -11,6 +11,7 @@ export interface StoredHunt {
   description: string
   cluesCount: number
   status: HuntStatus
+  creator?: string
   /** Unix timestamp in seconds — when the hunt starts. */
   startTime?: number
   /** Unix timestamp in seconds — when the hunt ends. */
@@ -25,6 +26,11 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+}
+
+export type HuntStoreSnapshot = {
+  hunts: StoredHunt[]
+  clues: Clue[]
 }
 
 const STORAGE_KEY = "hunty_hunts"
@@ -129,6 +135,11 @@ export function getCreatorHunts(): StoredHunt[] {
   return readHunts()
 }
 
+/** Hunts created by a specific creator (fallback: return all when creator is not set yet). */
+export function getHuntsByCreator(creator: string): StoredHunt[] {
+  return readHunts().filter((hunt) => !hunt.creator || hunt.creator === creator)
+}
+
 /** Update a hunt's status (e.g. Draft → Active after activate_hunt). */
 export function updateHuntStatus(huntId: number, status: HuntStatus): void {
   const hunts = readHunts().map((h) => (h.id === huntId ? { ...h, status } : h))
@@ -156,6 +167,25 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   )
   writeHunts(hunts)
+}
+
+/** Get a hunt by numeric id. */
+export function getHuntById(id: number): StoredHunt | undefined {
+  return readHunts().find((hunt) => hunt.id === id)
+}
+
+/** Snapshot current hunts/clues for optimistic UI rollback. */
+export function takeHuntStoreSnapshot(): HuntStoreSnapshot {
+  return {
+    hunts: readHunts(),
+    clues: readClues(),
+  }
+}
+
+/** Restore hunts/clues after an optimistic update fails. */
+export function restoreHuntStoreSnapshot(snapshot: HuntStoreSnapshot): void {
+  writeHunts(snapshot.hunts)
+  writeClues(snapshot.clues)
 }
 
 /** Get a single hunt */
