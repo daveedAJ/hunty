@@ -49,7 +49,8 @@ describe('PlayInterfaceGuard', () => {
       </PlayInterfaceGuard>
     )
 
-    expect(screen.getByText('Checking registration status...')).toBeInTheDocument()
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument()
+    expect(document.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
     expect(screen.queryByTestId('play-interface')).not.toBeInTheDocument()
     expect(screen.queryByTestId('registration-button')).not.toBeInTheDocument()
   })

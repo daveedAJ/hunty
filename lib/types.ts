@@ -166,3 +166,45 @@ export interface HuntCard {
   hintCost?: number
   points?: number
 }
+
+// ─── Profile Dashboard Types ───────────────────────────────────────────────────
+
+export type HuntProgressStatus = "Completed" | "In-Progress"
+
+export interface PlayerHuntProgress {
+  id: number
+  title: string
+  description: string
+  totalClues: number
+  status: HuntProgressStatus
+  pointsEarned: number
+  startedAt: string
+  completedAt?: string
+}
+
+export interface NftAttribute {
+  trait_type: string
+  value: string | number
+}
+
+export interface NftRewardDetail {
+  id: number
+  name: string
+  description?: string
+  imageUri: string
+  earnedAt: string
+  claimed: boolean
+  huntName?: string
+  attributes?: NftAttribute[]
+}
+
+export interface ProfileSummary {
+  totalHunts: number
+  completedHunts: number
+  inProgressHunts: number
+  totalPoints: number
+  completionRate: number
+  totalNftRewards: number
+  claimedNftRewards: number
+  unclaimedNftRewards: number
+}

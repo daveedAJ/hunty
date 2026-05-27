@@ -8,8 +8,11 @@ export default function ReactQueryProvider({ children }: { children: ReactNode }
         defaultOptions: {
           queries: {
             staleTime: 5 * 60 * 1000,
+            cacheTime: 5 * 60 * 1000,
             gcTime: 10 * 60 * 1000,
             refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: false,
           },
         },
       })
