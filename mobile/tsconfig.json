@@ -8,6 +8,7 @@
       "@lib/*": ["../lib/*"],
       "@store/*": ["./store/*"],
       "@providers/*": ["./providers/*"],
+      "@components/*": ["./components/*"]
       "@services/*": ["./services/*"]
     }
   }
