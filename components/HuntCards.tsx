@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Loader2, Printer } from "lucide-react";
 import picture from "@/public/static-images/image1.png";
 import { Skeleton } from "@/components/ui/skeleton";
-import { submitAnswer, AnswerIncorrectError } from "@/lib/contracts/hunt";
+import { submitAnswer, AnswerIncorrectError, pollTransaction } from "@/lib/contracts/hunt";
 import { resolveImageSrc, GATEWAY_COUNT } from "@/lib/ipfs";
 import type { HuntCard as Hunt } from "@/lib/types";
 
@@ -68,7 +68,12 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
       setIsPending(true);
       setError("");
       try {
-        await submitAnswer(huntId, Number(hunt.id), input);
+        const result = await submitAnswer(huntId, Number(hunt.id), input);
+        // Poll for transaction inclusion
+        if (result && result.txHash) {
+          await pollTransaction(result.txHash);
+        }
+
         // ClueCompleted event received
         setSuccess(true);
         
@@ -276,11 +281,11 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
         {success && (
           <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm sm:text-base animate-bounce">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-            Correct!
+            Solved!
           </div>
         )}
         {!success && isPending && (
-          <p className="text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">Verifying on-chain…</p>
+          <p className="text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">Submitting...</p>
         )}
         {!success && !isPending && error && (
           <p className="text-center text-red-500 dark:text-red-400 font-semibold text-xs sm:text-sm">{error}</p>

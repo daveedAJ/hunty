@@ -251,6 +251,60 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
 }
 
 /**
+ * Polls the Soroban RPC for transaction inclusion.
+ * Resolves to true if successful, throws if failed or timed out.
+ */
+export async function pollTransaction(txHash: string): Promise<boolean> {
+  if (typeof window === "undefined") return true;
+  if (txHash.startsWith("mock_tx_")) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    return true;
+  }
+
+  const server = new Server(SOROBAN_RPC_URL);
+  
+  for (let i = 0; i < 15; i++) {
+    try {
+      // Try using stellar-sdk SorobanRpc method if available
+      if (typeof (server as any).getTransaction === 'function') {
+        const res = await (server as any).getTransaction(txHash);
+        if (res && res.status !== "NOT_FOUND" && res.status !== "PENDING") {
+          if (res.status === "SUCCESS") return true;
+          throw new Error(`Transaction failed with status: ${res.status}`);
+        }
+      } else {
+        // Fallback to raw JSON-RPC
+        const rpcRes = await fetch(SOROBAN_RPC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "getTransaction",
+            params: { hash: txHash }
+          })
+        }).then(r => r.json());
+        
+        if (rpcRes?.result) {
+          const status = rpcRes.result.status;
+          if (status !== "NOT_FOUND" && status !== "PENDING") {
+            if (status === "SUCCESS") return true;
+            throw new Error(`Transaction failed with status: ${status}`);
+          }
+        }
+      }
+    } catch (e: any) {
+      if (e.message.includes("Transaction failed")) {
+        throw e;
+      }
+      console.warn("Polling error:", e);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  throw new Error("Transaction polling timed out after 30 seconds");
+}
+
+/**
  * Submits an answer for a specific clue. Throws AnswerIncorrectError on mismatch.
  * Mock implementation that checks against localStorage clue data.
  */
