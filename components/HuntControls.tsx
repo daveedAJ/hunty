@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog"
 import { AlertTriangle, X, Loader2 } from "lucide-react"
 import type { StoredHunt } from "@/lib/types"
-import Server, { TransactionBuilder, Networks, Operation } from "@stellar/stellar-sdk"
+import Server, { TransactionBuilder, Networks, Operation, Account } from "@stellar/stellar-sdk"
+import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
 
 async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
     if (typeof window === "undefined") throw new Error("Browser environment required")
@@ -54,7 +55,7 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
         )
     }
 
-    const account = await server.getAccount(publicKey)
+    const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
     const payload = JSON.stringify({ action: "cancel_hunt", hunt_id: huntId })
     const key = `cancel_hunt:${Date.now()}`
     const op = Operation.manageData({ name: key, value: payload })
@@ -95,7 +96,9 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
         )
     }
 
-    const res = await server.submitTransaction(signedXdr)
+    const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+        hash?: string
+    }
     if (!res?.hash) throw new Error("Transaction submission failed")
     return { txHash: res.hash }
 }

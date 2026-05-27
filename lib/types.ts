@@ -95,10 +95,25 @@ export type LeaderboardEntry = {
   points: number
 }
 
+export type FastestPlayerEntry = {
+  address: string
+  name?: string
+  points?: number
+  completionTimeSeconds: number
+}
+
 export interface LeaderboardDisplayEntry {
   position: number
   name: string
   points: number
+  icon: ReactNode
+}
+
+export interface FastestPlayerDisplayEntry {
+  position: number
+  name: string
+  completionTimeLabel: string
+  points?: number
   icon: ReactNode
 }
 
@@ -165,4 +180,46 @@ export interface HuntCard {
   hint?: string
   hintCost?: number
   points?: number
+}
+
+// ─── Profile Dashboard Types ───────────────────────────────────────────────────
+
+export type HuntProgressStatus = "Completed" | "In-Progress"
+
+export interface PlayerHuntProgress {
+  id: number
+  title: string
+  description: string
+  totalClues: number
+  status: HuntProgressStatus
+  pointsEarned: number
+  startedAt: string
+  completedAt?: string
+}
+
+export interface NftAttribute {
+  trait_type: string
+  value: string | number
+}
+
+export interface NftRewardDetail {
+  id: number
+  name: string
+  description?: string
+  imageUri: string
+  earnedAt: string
+  claimed: boolean
+  huntName?: string
+  attributes?: NftAttribute[]
+}
+
+export interface ProfileSummary {
+  totalHunts: number
+  completedHunts: number
+  inProgressHunts: number
+  totalPoints: number
+  completionRate: number
+  totalNftRewards: number
+  claimedNftRewards: number
+  unclaimedNftRewards: number
 }

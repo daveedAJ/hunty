@@ -1,5 +1,6 @@
 import Server, { TransactionBuilder, Operation } from "@stellar/stellar-sdk"
 import { getSorobanNetworkPassphrase, getSorobanRpcUrl } from "../soroban/client"
+import { withSorobanRpcRetry } from "../soroban/rpcRetry"
 import { RegistrationError } from "@/lib/contracts/errors"
 
 import type { PlayerProgress, RegistrationStatus, RegistrationResult } from "@/lib/types"
@@ -18,6 +19,23 @@ const RETRY_CONFIG = {
   initialDelayMs: 1000,
   maxDelayMs: 10000,
   backoffMultiplier: 2,
+  timeoutMs: 15000,
+}
+
+const NON_RETRYABLE_ERROR_CODES = [
+  "INVALID_HUNT_ID",
+  "INVALID_PLAYER_ADDRESS",
+  "WALLET_NOT_FOUND",
+  "WALLET_NOT_CONNECTED",
+  "WALLET_SIGNING_FAILED",
+  "ADDRESS_MISMATCH",
+]
+
+class NonRetryableRegistrationError extends Error {
+  constructor(public readonly original: RegistrationError) {
+    super(original.message)
+    this.name = "NonRetryableRegistrationError"
+  }
 }
 
 /**
@@ -32,42 +50,36 @@ async function withRetry<T>(
   fn: () => Promise<T>,
   retryConfig = RETRY_CONFIG
 ): Promise<T> {
-  let lastError: Error | undefined
-  let delayMs = retryConfig.initialDelayMs
-
-  for (let attempt = 1; attempt <= retryConfig.maxAttempts; attempt++) {
-    try {
-      return await fn()
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
-      
-      // Don't retry on validation errors or wallet errors
-      if (error instanceof RegistrationError) {
-        const nonRetryableCodes = [
-          "INVALID_HUNT_ID",
-          "INVALID_PLAYER_ADDRESS",
-          "WALLET_NOT_FOUND",
-          "WALLET_NOT_CONNECTED",
-          "WALLET_SIGNING_FAILED",
-          "ADDRESS_MISMATCH",
-        ]
-        if (error.code && nonRetryableCodes.includes(error.code)) {
+  try {
+    return await withSorobanRpcRetry(
+      async () => {
+        try {
+          return await fn()
+        } catch (error) {
+          if (
+            error instanceof RegistrationError &&
+            error.code &&
+            NON_RETRYABLE_ERROR_CODES.includes(error.code)
+          ) {
+            throw new NonRetryableRegistrationError(error)
+          }
           throw error
         }
+      },
+      {
+        maxAttempts: retryConfig.maxAttempts,
+        initialDelayMs: retryConfig.initialDelayMs,
+        maxDelayMs: retryConfig.maxDelayMs,
+        backoffMultiplier: retryConfig.backoffMultiplier,
+        timeoutMs: retryConfig.timeoutMs,
       }
-
-      // If this was the last attempt, throw the error
-      if (attempt === retryConfig.maxAttempts) {
-        break
-      }
-
-      // Wait before retrying with exponential backoff
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
-      delayMs = Math.min(delayMs * retryConfig.backoffMultiplier, retryConfig.maxDelayMs)
+    )
+  } catch (error) {
+    if (error instanceof NonRetryableRegistrationError) {
+      throw error.original
     }
+    throw error
   }
-
-  throw lastError
 }
 
 /**

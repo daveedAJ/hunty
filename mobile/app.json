@@ -28,6 +28,8 @@
       "associatedDomains": [
         "applinks:hunty.io"
       ]
+      "bundleIdentifier": "io.hunty.mobile",
+      "buildNumber": "1"
     },
 
     "android": {
@@ -52,6 +54,8 @@
           ]
         }
       ]
+      "package": "io.hunty.mobile",
+      "versionCode": 1
     },
 
     "web": {
@@ -59,7 +63,22 @@
     },
 
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Hunty needs your location to show nearby clue zones on the map.",
+          "locationWhenInUsePermission": "Hunty needs your location to show nearby clue zones on the map."
+        }
+      ]
     ]
+      "expo-router"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "hunty"
   }
 }

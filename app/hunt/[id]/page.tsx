@@ -6,6 +6,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import HuntDetailClient from "./share";
 import { HuntCountdown } from "./HuntCountdown";
+import { FastestPlayersStrip } from "@/components/FastestPlayersStrip";
 
 export async function generateMetadata({
   params,
@@ -157,6 +158,8 @@ const page = async ({ params }: PageProps) => {
             <HuntCountdown endTime={huntDetails.endTime} />
           )}
         </div>
+
+        <FastestPlayersStrip huntId={huntDetails.id} />
 
         <HuntDetailClient hunt={huntDetails}  />
       </main>

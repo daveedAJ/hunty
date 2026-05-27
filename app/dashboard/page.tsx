@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
 import { HuntDashboard } from "@/components/HuntDashboard"
 import type { StoredHunt } from "@/lib/types"
-import { getCreatorHunts, updateHuntStatus, saveClueLocally } from "@/lib/huntStore"
+import {
+  getCreatorHunts,
+  updateHuntStatus,
+  saveClueLocally,
+  takeHuntStoreSnapshot,
+  restoreHuntStoreSnapshot,
+} from "@/lib/huntStore"
 import { activateHunt, addClue } from "@/lib/contracts/hunt"
 import { withTransactionToast } from "@/lib/txToast"
 
@@ -23,39 +29,69 @@ export default function DashboardPage() {
   }, [refresh])
 
   const handleActivate = useCallback(async (huntId: number) => {
-    await withTransactionToast(
-      async (setStage) => {
-        setStage("approving")
-        return activateHunt(huntId)
-      },
-      {
-        pending:   "Pending — preparing transaction…",
-        approving: "Approving — sign in your wallet…",
-        confirmed: "Confirmed! Hunt is now visible in the Game Arcade.",
-      }
-    )
+    const snapshot = takeHuntStoreSnapshot()
     updateHuntStatus(huntId, "Active")
-  }, [])
+    refresh()
+
+    try {
+      await withTransactionToast(
+        async (setStage) => {
+          setStage("approving")
+          return activateHunt(huntId)
+        },
+        {
+          pending: "Pending — preparing transaction…",
+          approving: "Approving — sign in your wallet…",
+          confirmed: "Confirmed! Hunt is now visible in the Game Arcade.",
+        }
+      )
+    } catch (error) {
+      restoreHuntStoreSnapshot(snapshot)
+      refresh()
+      throw error
+    }
+  }, [refresh])
 
   const handleSaveClues = useCallback(
     async (huntId: number, clues: { question: string; answer: string; points: number }[]) => {
-      for (const clue of clues) {
-        const normalizedAnswer = clue.answer.trim().toLowerCase()
-        await withTransactionToast(
-          async (setStage) => {
-            setStage("approving")
-            return addClue(huntId, clue.question.trim(), normalizedAnswer, clue.points)
-          },
-          {
-            pending:   `Pending — preparing clue "${clue.question.trim().slice(0, 30)}…"`,
-            approving: "Approving — sign in your wallet…",
-            confirmed: "Clue confirmed!",
-          }
-        )
-        saveClueLocally({ huntId, question: clue.question.trim(), answer: normalizedAnswer, points: clue.points })
+      const snapshot = takeHuntStoreSnapshot()
+      const normalizedClues = clues.map((clue) => ({
+        question: clue.question.trim(),
+        answer: clue.answer.trim().toLowerCase(),
+        points: clue.points,
+      }))
+
+      for (const clue of normalizedClues) {
+        saveClueLocally({
+          huntId,
+          question: clue.question,
+          answer: clue.answer,
+          points: clue.points,
+        })
+      }
+      refresh()
+
+      try {
+        for (const clue of normalizedClues) {
+          await withTransactionToast(
+            async (setStage) => {
+              setStage("approving")
+              return addClue(huntId, clue.question, clue.answer, clue.points)
+            },
+            {
+              pending: `Pending — preparing clue "${clue.question.slice(0, 30)}…"`,
+              approving: "Approving — sign in your wallet…",
+              confirmed: "Clue confirmed!",
+            }
+          )
+        }
+      } catch (error) {
+        restoreHuntStoreSnapshot(snapshot)
+        refresh()
+        throw error
       }
     },
-    []
+    [refresh]
   )
 
   return (

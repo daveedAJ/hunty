@@ -22,7 +22,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="hunts" options={{ title: 'Hunts' }} />
-      <Tabs.Screen name="play" options={{ title: 'Map/Play' }} />
+      <Tabs.Screen name="play" options={{ title: 'Map', headerShown: false }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>

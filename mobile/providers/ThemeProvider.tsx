@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMountedRef } from '../hooks/useMountedRef';
+import { registerDiagnostic, unregisterDiagnostic } from '../lib/memoryDiagnostics';
 
 export type Theme = 'light' | 'dark';
 
@@ -54,22 +56,59 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(systemColorScheme === 'dark' ? 'dark' : 'light');
   const [mounted, setMounted] = useState(false);
 
+  const mountedRef = useMountedRef();
+
   useEffect(() => {
+    registerDiagnostic('ThemeProviderAsyncLoad');
+    let active = true;
+
+    const loadTheme = async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem('theme');
+        if (!mountedRef.current) {
+          return;
+        }
+    let isMounted = true;
+
     // Load saved theme preference
     const loadTheme = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('theme');
+        if (!isMounted) return;
+
         if (savedTheme) {
           setTheme(savedTheme as Theme);
         } else if (systemColorScheme) {
           setTheme(systemColorScheme === 'dark' ? 'dark' : 'light');
         }
       } catch (error) {
-        console.warn('Failed to load theme preference:', error);
+        if (__DEV__) {
+          console.warn('Failed to load theme preference:', error);
+        }
+      } finally {
+        if (active && mountedRef.current) {
+        if (isMounted) {
+          console.warn('Failed to load theme preference:', error);
+        }
+      } finally {
+        if (isMounted) {
+          setMounted(true);
+        }
       }
-      setMounted(true);
     };
+
+    void loadTheme();
+
+    return () => {
+      active = false;
+      unregisterDiagnostic('ThemeProviderAsyncLoad');
+    };
+  }, [systemColorScheme, mountedRef]);
     loadTheme();
+
+    return () => {
+      isMounted = false;
+    };
   }, [systemColorScheme]);
 
   const toggleTheme = async () => {
