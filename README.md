@@ -1,3 +1,98 @@
+# Hunty
+
+> A cross-platform scavenger-hunt platform and dApp combining web, mobile, and on-chain rewards.
+
+**Hunty** is an evolving project that helps creators publish location-based hunts and gives players NFT, token, and other on-chain rewards for completing challenges. It combines a Next.js web frontend, an Expo-based mobile app, IPFS-hosted content, and integrations with the Stellar/Soroban ecosystem for payments, NFTs and smart-contract logic.
+
+**Highlights**
+
+- **Multi-platform:** Web (Next.js App Router) + React Native (mobile/) for parity across devices.
+- **On‑chain rewards:** Smart‑contract integrations with Stellar/Soroban, wallet adapters (Freighter) and NFT support.
+- **Decentralized assets:** IPFS used for storing media and metadata for hunts and NFTs.
+- **Developer tooling:** Unit tests with Vitest, E2E tests with Playwright, type-safe code in TypeScript.
+
+**Key Features**
+
+- Create, publish and manage hunts (creator dashboard).
+- Play hunts via a guided UI with location/clue validation and progress tracking.
+- Mint and claim NFT rewards and on-chain tokens for completed hunts.
+- Community and leaderboard components for social play.
+
+**Tech Stack**
+
+- Frontend: Next.js (app/), React, TypeScript
+- Mobile: Expo / React Native (mobile/)
+- Storage: IPFS for media and metadata
+- Blockchain: Stellar + Soroban smart contracts, wallet adapters, transaction helpers
+- Testing & CI: Vitest (unit), Playwright (E2E)
+- Tooling: pnpm, Tailwind/postcss (where applicable), Playwright, Vitest
+
+**Repository Structure (high level)**
+
+- `app/` — Next.js app router routes and pages (web UI)
+- `components/` — Reusable React components and UI patterns
+- `lib/` — Core utilities, blockchain adapters, stores and helpers
+- `mobile/` — Expo React Native mobile app and mobile-specific assets
+- `public/` — Static assets served by the web app
+- `e2e/` — End-to-end Playwright tests
+- `components/__tests__/` and `lib/__tests__/` — Unit tests
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and PR expectations.
+
+Getting started
+
+1. Install dependencies (root):
+
+```bash
+pnpm install
+```
+
+2. Run the web app (development):
+
+```bash
+pnpm dev
+```
+
+3. Mobile app (from `mobile/`):
+
+```bash
+cd mobile
+pnpm install
+expo start
+```
+
+4. Tests:
+
+```bash
+pnpm test        # run unit tests (vitest)
+pnpm run e2e     # run end-to-end tests (Playwright)
+```
+
+Notes and environment
+
+- The project prefers `pnpm`; a `pnpm-lock.yaml` is included.
+- Wallet integrations and local Stellar/testnet configuration are required for on-chain flows — see `lib/walletAdapter.ts` and `lib/stellarErrors.ts` for helpers and known errors.
+
+**Roadmap & Where This Project Is Going**
+
+- Improve Soroban smart-contract parity: finalize and audit core reward contracts.
+- Robust on-chain UX: gasless flows, better error handling, and clearer signing prompts.
+- Persistent IPFS pinning + CDN fallback for hosted assets to improve availability.
+- Mobile parity: feature matching between web and mobile with offline play support.
+- Better creator tooling: templates, analytics, and easy minting flows for rewards.
+- Community features: in-app messaging, team hunts, and governance for shared hunts.
+- Monetization & ops: gated paid hunts, sponsorships, and tooling for creators to monetize content.
+
+Contributing
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and open issues for new features or bugs.
+- Use branches for feature work; include tests and keep changes focused.
+
+Contact
+
+Open issues and PRs on the repository; tag maintainers for urgent reviews.
+
+— The Hunty team
 # Hunty - Decentralized Scavenger Hunt Game
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
