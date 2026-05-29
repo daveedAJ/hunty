@@ -10,6 +10,7 @@ import { ThemeProvider, useTheme } from '@providers/ThemeProvider';
 import ReactQueryProvider from '@providers/ReactQueryProvider';
 import { ToastProvider, useToast } from '@providers/ToastProvider';
 import { Web3Provider } from '@providers/Web3Provider';
+import { ModalProvider } from '@providers/ModalProvider';
 import { ThemedButton, ThemedCustomText } from '@components/themed';
 import { useFonts } from '@app/hooks/useFonts';
 import { useBackHandler } from '@hooks/useBackHandler';
@@ -61,7 +62,9 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <Web3Provider>
             <ToastProvider>
-              <RootLayoutNav />
+              <ModalProvider>
+                <RootLayoutNav />
+              </ModalProvider>
             </ToastProvider>
           </Web3Provider>
         </SafeAreaProvider>
