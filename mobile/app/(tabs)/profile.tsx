@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
+import { EmptyState } from '@components/EmptyState';
 import { useTheme } from '@providers/ThemeProvider';
 import { useWalletStore } from '@store/useStore';
 import { formatISOString } from '@lib/dateUtils';
@@ -146,6 +148,7 @@ function NftCard({ nft, colors }: { nft: NftRewardDetail; colors: Colors }) {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { walletAddress, isConnected, watchOnlyAddress } = useWalletStore();
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([]);
@@ -207,19 +210,15 @@ export default function ProfileScreen() {
 
   if (!activeAddress) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.emptyContainer}>
-          <ThemedCustomText variant="h2" style={styles.centeredBold}>
-            Connect your wallet
-          </ThemedCustomText>
-          <ThemedCustomText variant="body" style={styles.centeredCaption}>
-            Your profile uses the connected Stellar address to load hunts played and points earned.
-          </ThemedCustomText>
-          <ThemedCustomText variant="caption" style={styles.emptyHint}>
-            Use Connect Wallet or add a watch-only address in Settings.
-          </ThemedCustomText>
-        </View>
-      </ThemedView>
+      <EmptyState
+        icon="👛"
+        title="Connect your wallet"
+        description="Your profile uses the connected Stellar address to load hunts played and points earned."
+        action={{
+          label: 'Go to Settings',
+          onPress: () => router.push('/(tabs)/settings'),
+        }}
+      />
     );
   }
 
@@ -273,9 +272,15 @@ export default function ProfileScreen() {
               </ThemedCustomText>
               <View style={styles.nftGrid}>
                 {nftRewards.length === 0 ? (
-                  <View style={[styles.emptyDashedCard, { borderColor: colors.border }]}>
-                    <ThemedCustomText variant="body">No trophies yet.</ThemedCustomText>
-                  </View>
+                  <EmptyState
+                    icon="🏆"
+                    title="No trophies yet"
+                    description="Complete your first hunt to earn NFT trophies and rewards."
+                    action={{
+                      label: 'Browse Hunts',
+                      onPress: () => {},
+                    }}
+                  />
                 ) : (
                   nftRewards.map((nft) => <NftCard key={nft.id} nft={nft} colors={colors} />)
                 )}
@@ -339,24 +344,8 @@ const styles = StyleSheet.create({
   nftPreview: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   nftDot: { width: 12, height: 12, borderRadius: 6 },
   nftContent: { padding: 12, gap: 4 },
-  emptyDashedCard: {
-    width: '100%',
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-  },
   errorCard: { padding: 16, borderRadius: 12, borderWidth: 1 },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 24,
-  },
   centeredBold: { textAlign: 'center', fontWeight: '700' },
   centeredCaption: { textAlign: 'center', maxWidth: 300 },
-  emptyHint: { marginTop: 8, opacity: 0.7 },
   loadingContainer: { paddingVertical: 48, alignItems: 'center' },
 });

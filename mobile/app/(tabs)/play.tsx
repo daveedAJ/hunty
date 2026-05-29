@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
+import { EmptyState } from '@components/EmptyState';
 import { useTheme } from '@providers/ThemeProvider';
 import { getHuntClues } from '@store/huntStore';
 import { usePlayerStore, useWalletStore } from '@store/useStore';
@@ -39,14 +40,15 @@ export default function PlayScreen() {
 
   if (!currentProgress?.hunt_id) {
     return (
-      <ThemedView style={[styles.emptyState, { backgroundColor: colors.background }]}>
-        <ThemedCustomText variant="h2" color="primary" weight="800">
-          Join a hunt first
-        </ThemedCustomText>
-        <ThemedCustomText variant="body" style={styles.emptyCopy}>
-          Register for an active hunt from the Hunts tab to unlock clue progress and transaction steps.
-        </ThemedCustomText>
-      </ThemedView>
+      <EmptyState
+        icon="🎯"
+        title="Join a hunt first"
+        description="Register for an active hunt from the Hunts tab to unlock clue progress and transaction steps."
+        action={{
+          label: 'Browse Hunts',
+          onPress: () => router.push('/(tabs)/hunts'),
+        }}
+      />
     );
   }
 

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { HuntyRefreshControl } from '@components/HuntyRefreshControl';
 import { ThemedCustomText, ThemedView } from '@components/themed';
+import { EmptyState } from '@components/EmptyState';
 import { useRefreshByUser } from '@hooks/useRefreshByUser';
 import { useTheme } from '@providers/ThemeProvider';
 import { getActiveHuntsForFeed } from '@store/huntStore';
@@ -88,9 +89,15 @@ export default function HomeFeed() {
             </ThemedCustomText>
 
             {section.data.length === 0 ? (
-              <View style={[styles.emptyCard, { borderColor: colors.border }]}>
-                <ThemedCustomText variant="body">No active hunts found.</ThemedCustomText>
-              </View>
+              <EmptyState
+                icon="🗺️"
+                title="No active hunts found"
+                description="There are currently no hunts available in this category. Check back later or explore other sections."
+                action={{
+                  label: 'Browse Hunts',
+                  onPress: () => router.push('/(tabs)/hunts'),
+                }}
+              />
             ) : (
               section.data.map((hunt) => {
                 const prize = estimatedPrize(hunt);
