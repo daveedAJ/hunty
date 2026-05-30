@@ -1,11 +1,20 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { useColorScheme, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Theme = 'light' | 'dark';
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: Theme;
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
   toggleTheme: () => void;
   isDark: boolean;
   colors: ColorScheme;
@@ -49,48 +58,79 @@ const darkColors: ColorScheme = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const systemColorScheme = useColorScheme();
-  const [theme, setTheme] = useState<Theme>(systemColorScheme === 'dark' ? 'dark' : 'light');
+  const [preference, setPreference] = useState<ThemePreference>('system');
   const [mounted, setMounted] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    // Load saved theme preference
+    mountedRef.current = true;
+
     const loadTheme = async () => {
       try {
-        const savedTheme = await AsyncStorage.getItem('theme');
-        if (savedTheme) {
-          setTheme(savedTheme as Theme);
-        } else if (systemColorScheme) {
-          setTheme(systemColorScheme === 'dark' ? 'dark' : 'light');
+        const saved = await AsyncStorage.getItem('themePreference');
+        if (!mountedRef.current) return;
+        if (saved === 'light' || saved === 'dark' || saved === 'system') {
+          setPreference(saved);
         }
-      } catch (error) {
-        console.warn('Failed to load theme preference:', error);
+      } catch {
+        if (__DEV__) console.warn('Failed to load theme preference');
+      } finally {
+        if (mountedRef.current) setMounted(true);
       }
-      setMounted(true);
     };
-    loadTheme();
-  }, [systemColorScheme]);
 
-  const toggleTheme = async () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
+    void loadTheme();
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const setThemePreference = async (newPreference: ThemePreference) => {
+    setPreference(newPreference);
     try {
-      await AsyncStorage.setItem('theme', newTheme);
-    } catch (error) {
-      console.warn('Failed to save theme preference:', error);
+      await AsyncStorage.setItem('themePreference', newPreference);
+    } catch {
+      if (__DEV__) console.warn('Failed to save theme preference');
     }
   };
 
-  const isDark = theme === 'dark';
-  const colors = isDark ? darkColors : lightColors;
+  const resolvedTheme: Theme =
+    preference === 'system'
+      ? systemColorScheme === 'dark'
+        ? 'dark'
+        : 'light'
+      : preference;
+
+  const toggleTheme = () => {
+    setThemePreference(resolvedTheme === 'light' ? 'dark' : 'light');
+  };
+
+  const isDark = resolvedTheme === 'dark';
 
   if (!mounted) {
-    return null;
+    // Render an opaque background matching the system color scheme to prevent
+    // a white flash before the async theme preference is resolved.
+    const bg = systemColorScheme === 'dark' ? darkColors.background : lightColors.background;
+    return <View style={{ flex: 1, backgroundColor: bg }} />;
   }
+  if (!mounted) return null;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, isDark, colors }}>
+    <ThemeContext.Provider
+      value={{
+        theme: resolvedTheme,
+        themePreference: preference,
+        setThemePreference,
+        toggleTheme,
+        isDark,
+        colors: isDark ? darkColors : lightColors,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -98,8 +138,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };

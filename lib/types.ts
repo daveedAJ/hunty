@@ -3,7 +3,7 @@
  * All shared interfaces and types live here — import from "@/lib/types".
  */
 
-import type { ReactNode } from "react"
+type ReactNode = unknown
 
 // ─── Hunt ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +48,12 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+  /** Center latitude for the clue's answer geofence. */
+  latitude?: number
+  /** Center longitude for the clue's answer geofence. */
+  longitude?: number
+  /** Allowed distance from the clue center in metres. Defaults to 100m. */
+  geofenceRadiusMeters?: number
 }
 
 export type ClueInfo = {
@@ -95,10 +101,25 @@ export type LeaderboardEntry = {
   points: number
 }
 
+export type FastestPlayerEntry = {
+  address: string
+  name?: string
+  points?: number
+  completionTimeSeconds: number
+}
+
 export interface LeaderboardDisplayEntry {
   position: number
   name: string
   points: number
+  icon: ReactNode
+}
+
+export interface FastestPlayerDisplayEntry {
+  position: number
+  name: string
+  completionTimeLabel: string
+  points?: number
   icon: ReactNode
 }
 
@@ -165,4 +186,46 @@ export interface HuntCard {
   hint?: string
   hintCost?: number
   points?: number
+}
+
+// ─── Profile Dashboard Types ───────────────────────────────────────────────────
+
+export type HuntProgressStatus = "Completed" | "In-Progress"
+
+export interface PlayerHuntProgress {
+  id: number
+  title: string
+  description: string
+  totalClues: number
+  status: HuntProgressStatus
+  pointsEarned: number
+  startedAt: string
+  completedAt?: string
+}
+
+export interface NftAttribute {
+  trait_type: string
+  value: string | number
+}
+
+export interface NftRewardDetail {
+  id: number
+  name: string
+  description?: string
+  imageUri: string
+  earnedAt: string
+  claimed: boolean
+  huntName?: string
+  attributes?: NftAttribute[]
+}
+
+export interface ProfileSummary {
+  totalHunts: number
+  completedHunts: number
+  inProgressHunts: number
+  totalPoints: number
+  completionRate: number
+  totalNftRewards: number
+  claimedNftRewards: number
+  unclaimedNftRewards: number
 }

@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/Header";
 import { PlayerProgressPanel } from "@/components/PlayerProgressPanel";
 import { get_clue_info, get_hunt } from "@/lib/contracts/hunt";

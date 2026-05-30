@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TextProps, StyleSheet } from 'react-native';
-import { useTheme } from '../providers/ThemeProvider';
+import { useTheme } from '@providers/ThemeProvider';
 
 type TextVariant = 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'label';
 type TextColor = 'text' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info';
@@ -46,6 +46,8 @@ const variantStyles = {
   },
 };
 
+const headingVariants = new Set<TextVariant>(['h1', 'h2', 'h3']);
+
 export const ThemedCustomText: React.FC<ThemedCustomTextProps> = ({
   variant = 'body',
   color = 'text',
@@ -53,6 +55,7 @@ export const ThemedCustomText: React.FC<ThemedCustomTextProps> = ({
   style,
   lightColor,
   darkColor,
+  accessibilityRole,
   ...otherProps
 }) => {
   const { isDark, colors } = useTheme();
@@ -64,8 +67,12 @@ export const ThemedCustomText: React.FC<ThemedCustomTextProps> = ({
   const variantStyle = variantStyles[variant];
   const fontWeight = weight || variantStyle.fontWeight;
 
+  const resolvedRole = accessibilityRole ?? (headingVariants.has(variant) ? 'header' : undefined);
+
   return (
     <Text
+      accessible={true}
+      accessibilityRole={resolvedRole}
       style={[
         variantStyle,
         { color: colorValue, fontWeight },

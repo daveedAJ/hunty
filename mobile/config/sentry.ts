@@ -1,4 +1,4 @@
-import * as Sentry from 'sentry-expo';
+import * as Sentry from '@sentry/react-native';
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 const environment = process.env.EXPO_PUBLIC_ENVIRONMENT || (__DEV__ ? 'development' : 'production');
@@ -12,7 +12,6 @@ export const initializeSentry = () => {
     dsn,
     enabled: Boolean(dsn),
     environment,
-    enableInExpoDevelopment: false,
     debug: __DEV__,
   });
 

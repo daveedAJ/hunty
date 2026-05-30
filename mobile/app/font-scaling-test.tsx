@@ -122,12 +122,8 @@ export default function FontScalingTestScreen() {
         <Text style={[styles.sampleText, { fontSize: normalizeFont(16 * MAX_FONT_SCALE) }]}>
           Race across town to uncover hidden murals and landmarks.
         </Text>
-        <View style={[styles.sampleButton, { fontSize: normalizeFont(16 * MAX_FONT_SCALE) }]}>
-          Start Hunt
-        </View>
-        <View style={[styles.sampleButton, { fontSize: normalizeFont(14 * MAX_FONT_SCALE) }]}>
-          Play Now
-        </View>
+        <Text style={[styles.sampleButton, { fontSize: normalizeFont(16 * MAX_FONT_SCALE) }]}>Start Hunt</Text>
+        <Text style={[styles.sampleButton, { fontSize: normalizeFont(14 * MAX_FONT_SCALE) }]}>Play Now</Text>
       </View>
     </ScrollView>
   );

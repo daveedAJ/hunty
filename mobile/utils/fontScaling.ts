@@ -3,6 +3,7 @@ import { PixelRatio, Dimensions } from 'react-native';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Normalize font size based on screen width and height
+
 export const normalizeFont = (size: number): number => {
   const scale = SCREEN_WIDTH / 320;
   const scaleHeight = SCREEN_HEIGHT / 568;

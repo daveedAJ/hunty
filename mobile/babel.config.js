@@ -15,9 +15,12 @@ module.exports = function (api) {
             '@components': './components',
             '@utils': './utils',
             '@config': './config',
+            '@services': './services',
           },
         },
       ],
+      'nativewind/babel',
+      'react-native-reanimated/plugin',
     ],
   };
 };

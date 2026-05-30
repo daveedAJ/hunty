@@ -29,9 +29,6 @@ export async function hideSplashScreen() {
  * Useful for authentication flows or critical loading states
  */
 export async function showSplashScreen() {
-  try {
-    await SplashScreen.showAsync();
-  } catch (e) {
-    console.warn(`Failed to show the splash screen: ${e}`);
-  }
+  // expo-splash-screen does not support showing the splash once hidden.
+  return Promise.resolve();
 }

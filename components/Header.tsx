@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Coin from "./icons/Coin";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { useFreighterWallet } from "@/hooks/useFreighterWallet";
-import { WalletModal } from "./WalletModal";
+import { WalletBottomSheet } from "./WalletBottomSheet";
 import { Copy, LogOut, Check } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -152,7 +152,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
         )}
       </header>
 
-      <WalletModal
+      <WalletBottomSheet
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onConnect={(provider) => connect(provider)}

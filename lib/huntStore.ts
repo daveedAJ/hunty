@@ -7,6 +7,16 @@ import type { HuntStatus, StoredHunt, Clue } from "@/lib/types"
 
 export type { HuntStatus, StoredHunt, Clue }
 
+export type HuntStoreSnapshot = {
+  hunts: StoredHunt[]
+  clues: Clue[]
+}
+
+export type HuntStoreSnapshot = {
+  hunts: StoredHunt[]
+  clues: Clue[]
+}
+
 const STORAGE_KEY = "hunty_hunts"
 const CLUES_KEY = "hunty_clues"
 
@@ -120,8 +130,12 @@ export function getCreatorHunts(): StoredHunt[] {
 }
 
 /** Get hunts for a creator (creator public-key filter not implemented yet; returns all hunts). */
-export function getHuntsByCreator(): StoredHunt[] {
-  return readHunts()
+export function getHuntsByCreator(creator?: string): StoredHunt[] {
+  if (!creator) return readHunts()
+  return readHunts().filter((hunt) => {
+    const withCreator = hunt as StoredHunt & { creator?: string }
+    return !withCreator.creator || withCreator.creator === creator
+  })
 }
 
 /** Update a hunt's status (e.g. Draft → Active after activate_hunt). */
@@ -175,6 +189,20 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   )
   writeHunts(hunts)
+}
+
+/** Snapshot current hunts/clues for optimistic UI rollback. */
+export function takeHuntStoreSnapshot(): HuntStoreSnapshot {
+  return {
+    hunts: readHunts(),
+    clues: readClues(),
+  }
+}
+
+/** Restore hunts/clues after an optimistic update fails. */
+export function restoreHuntStoreSnapshot(snapshot: HuntStoreSnapshot): void {
+  writeHunts(snapshot.hunts)
+  writeClues(snapshot.clues)
 }
 
 /** Get a single hunt by string ID */

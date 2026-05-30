@@ -6,7 +6,7 @@ import { ThemedCustomText } from '@components/themed';
 
 interface HeaderRenderArgs {
   tintColor?: string;
-  canGoBack?: boolean;
+  canGoBack: boolean;
 }
 
 interface StackHeaderProps {
@@ -16,7 +16,7 @@ interface StackHeaderProps {
   };
   options: {
     title?: string;
-    headerTitle?: string | ((props: unknown) => React.ReactNode);
+    headerTitle?: string | ((props: any) => React.ReactNode);
     headerTintColor?: string;
     headerRight?: (props: HeaderRenderArgs) => React.ReactNode;
   };
