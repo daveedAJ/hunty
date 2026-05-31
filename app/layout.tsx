@@ -4,7 +4,6 @@ import "./globals.css"
 import { hankenGrotesk } from "@/lib/font"
 import { TxToaster } from "@/components/TxToaster"
 import Providers from "./providers"
-import * as Sentry from "@sentry/nextjs"
 
 export const metadata: Metadata = {
   title: "Hunty - Decentralized Scavenger Hunt Game",
@@ -60,12 +59,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${hankenGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Providers>
-          <Sentry.ErrorBoundary fallback={<p>An error has occurred</p>}>
-            <TxToaster />
-            <main>
-              {children}
-            </main>
-          </Sentry.ErrorBoundary>
+          <TxToaster />
+          <main>
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

@@ -4,7 +4,6 @@ import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
 import { normalizeNetworkError, AnswerIncorrectError } from "./errors"
 import { SOROBAN_RPC_URL, NETWORK_PASSPHRASE } from "./config"
 import { getActiveWalletAdapter } from "@/lib/walletAdapter"
-import * as Sentry from "@sentry/nextjs"
 
 import type { ClueInfo, HuntInfo, CreateHuntResult, SubmitAnswerResult, ActivateHuntResult, AddClueResult, ExtendHuntResult, LeaderboardEntry, FastestPlayerEntry } from "@/lib/types"
 
@@ -75,19 +74,12 @@ export async function createHunt(
   const signedXdr = await wallet.signTransaction(tx.toXDR())
 
   // Submit signed transaction XDR to RPC
-  try {
-    const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
-      hash?: string
-    }
-    if (!res || !res.hash) throw new Error("Transaction submission failed")
-
-    return { txHash: res.hash }
-  } catch (error) {
-    Sentry.captureException(error, {
-      tags: { wallet_address: publicKey, action: "create_hunt" },
-    })
-    throw error
+  const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
   }
+  if (!res || !res.hash) throw new Error("Transaction submission failed")
+
+  return { txHash: res.hash }
 }
 
 /**
@@ -116,18 +108,11 @@ export async function activateHunt(huntId: number): Promise<ActivateHuntResult> 
 
   const signedXdr = await wallet.signTransaction(tx.toXDR())
 
-  try {
-    const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
-      hash?: string
-    }
-    if (!res?.hash) throw new Error("Transaction submission failed")
-    return { txHash: res.hash }
-  } catch (error) {
-    Sentry.captureException(error, {
-      tags: { wallet_address: publicKey, action: "activate_hunt" },
-    })
-    throw error
+  const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
   }
+  if (!res?.hash) throw new Error("Transaction submission failed")
+  return { txHash: res.hash }
 }
 
 /**
@@ -173,18 +158,11 @@ export async function addClue(
 
   const signedXdr = await wallet.signTransaction(tx.toXDR())
 
-  try {
-    const res2 = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
-      hash?: string
-    }
-    if (!res2?.hash) throw new Error("Transaction submission failed")
-    return { txHash: res2.hash }
-  } catch (error) {
-    Sentry.captureException(error, {
-      tags: { wallet_address: publicKey, action: "add_clue" },
-    })
-    throw error
+  const res2 = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
   }
+  if (!res2?.hash) throw new Error("Transaction submission failed")
+  return { txHash: res2.hash }
 }
 
 /**
@@ -220,18 +198,11 @@ export async function extendEndTime(
 
   const signedXdr = await wallet.signTransaction(tx.toXDR())
 
-  try {
-    const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
-      hash?: string
-    }
-    if (!res?.hash) throw new Error("Transaction submission failed")
-    return { txHash: res.hash, newEndTime }
-  } catch (error) {
-    Sentry.captureException(error, {
-      tags: { wallet_address: publicKey, action: "extend_end_time" },
-    })
-    throw error
+  const res = (await withSorobanRpcRetry(() => server.submitTransaction(signedXdr))) as {
+    hash?: string
   }
+  if (!res?.hash) throw new Error("Transaction submission failed")
+  return { txHash: res.hash, newEndTime }
 }
 
 /**

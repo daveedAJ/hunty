@@ -38,12 +38,6 @@ First things first, let's get the code on your machine:
    pnpm install
    ```
 
-5. **Run the development environment with Docker:**  
-   ```bash
-   docker compose up
-   ```
-   This builds the Docker image using `Dockerfile.dev` and starts the app on port 3000 with hot-reload enabled.
-
 3. **Start the development server:**
    ```bash
  
