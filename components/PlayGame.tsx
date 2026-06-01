@@ -66,6 +66,7 @@ export function PlayGame({
           points: clue.points,
           hint: clue.hint,
           hintCost: clue.hintCost,
+          difficulty: clue.difficulty,
         });
       }
       return { clues, huntInfo };

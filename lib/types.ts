@@ -50,6 +50,8 @@ export type HuntInfo = {
 
 // ─── Clue ────────────────────────────────────────────────────────────────────
 
+export type ClueDifficulty = "Easy" | "Medium" | "Hard"
+
 export interface Clue {
   id: number
   huntId: number
@@ -58,6 +60,8 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+  /** Optional difficulty tag set by the creator. */
+  difficulty?: ClueDifficulty
   /** Center latitude for the clue's answer geofence. */
   latitude?: number
   /** Center longitude for the clue's answer geofence. */
@@ -72,6 +76,7 @@ export type ClueInfo = {
   points: number
   hint?: string
   hintCost?: number
+  difficulty?: ClueDifficulty
 }
 
 export interface ClueRow {
@@ -81,6 +86,7 @@ export interface ClueRow {
   points: number
   hint?: string
   hintCost?: number
+  difficulty?: ClueDifficulty
 }
 
 // ─── Transaction Results ─────────────────────────────────────────────────────
@@ -201,6 +207,7 @@ export interface HuntCard {
   hint?: string
   hintCost?: number
   points?: number
+  difficulty?: ClueDifficulty
 }
 
 export interface HuntDraft {

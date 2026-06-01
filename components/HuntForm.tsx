@@ -31,6 +31,7 @@ const clueSchema = z.object({
   points: z.number().min(1, "Points must be at least 1"),
   hint: z.string(),
   hintCost: z.number().min(0),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
 })
 
 const cluesFormSchema = z.object({
@@ -111,6 +112,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           points: row.points,
           hint: row.hint?.trim() || undefined,
           hintCost: row.hintCost,
+          difficulty: row.difficulty,
         })
 
         const salt = `${huntId}_${newId}`
@@ -120,7 +122,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           async (setStage) => {
             setStage("approving")
             // Submit the hashed answer to the contract (expected scheme: sha256(answer + salt))
-            return addClue(huntId, row.question.trim(), hashed, row.points, row.hint?.trim() || undefined, row.hintCost)
+            return addClue(huntId, row.question.trim(), hashed, row.points, row.hint?.trim() || undefined, row.hintCost, row.difficulty)
           },
           {
             pending:   "Pending — preparing clue…",
@@ -366,6 +368,23 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                       ref={f.ref}
                       className="w-24 pl-3 py-2 text-sm"
                     />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name={`clues.${index}.difficulty`}
+                  render={({ field: f }) => (
+                    <select
+                      aria-label={`Clue ${index + 1} Difficulty`}
+                      value={f.value ?? ""}
+                      onChange={(e) => f.onChange(e.target.value || undefined)}
+                      className="w-28 pl-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">Difficulty</option>
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
                   )}
                 />
               </div>

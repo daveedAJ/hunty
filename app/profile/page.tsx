@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { formatISOString } from "@/lib/dateUtils"
 import { logger } from "@/lib/logger"
 
@@ -11,6 +12,54 @@ import { useWallet, shortenAddress } from "@/lib/context/WalletContext"
 import { NftGallery } from "@/components/NftGallery"
 import { BadgeWall } from "@/components/BadgeWall"
 import type { NftRewardDetail } from "@/components/NftDetailModal"
+
+// ---------------------------------------------------------------------------
+// #355 — Registered Hunts types and fetcher
+// ---------------------------------------------------------------------------
+
+type RegistrationStatus = "Registered" | "In Progress" | "Completed"
+
+interface RegisteredHunt {
+  huntId: number
+  title: string
+  startTime: number   // unix epoch seconds
+  status: RegistrationStatus
+}
+
+/**
+ * Fetch all hunts the player has registered for from the PlayerRegistration
+ * contract (or indexer). Returns registrations sorted by start time ascending.
+ *
+ * Replace this stub with a real `get_player_registrations(address)` call once
+ * the indexer endpoint is available.
+ */
+async function fetchPlayerRegistrations(address: string): Promise<RegisteredHunt[]> {
+  if (!address) return []
+
+  // Stub data — replace with real contract / indexer call
+  return [
+    {
+      huntId: 10,
+      title: "Downtown Mural Hunt",
+      startTime: Math.floor(Date.now() / 1000) + 3 * 86400, // 3 days from now
+      status: "Registered",
+    },
+    {
+      huntId: 11,
+      title: "Campus Cryptography Quest",
+      startTime: Math.floor(Date.now() / 1000) - 3600, // started 1 hour ago
+      status: "In Progress",
+    },
+    {
+      huntId: 12,
+      title: "Stellar Dev Hunt",
+      startTime: Math.floor(Date.now() / 1000) - 7 * 86400,
+      status: "Completed",
+    },
+  ]
+}
+
+// ---------------------------------------------------------------------------
 
 type HuntProgressStatus = "Completed" | "In-Progress"
 
@@ -122,6 +171,7 @@ export default function UserProfilePage() {
   const { connected, publicKey } = useWallet()
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([])
   const [nftRewards, setNftRewards] = useState<NftReward[]>([])
+  const [registrations, setRegistrations] = useState<RegisteredHunt[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -163,8 +213,18 @@ export default function UserProfilePage() {
       }
     }
 
+    const loadRegistrations = async () => {
+      try {
+        const data = await fetchPlayerRegistrations(publicKey!)
+        if (!cancelled) setRegistrations(data)
+      } catch (err) {
+        logger.error("Failed to load registrations:", err)
+      }
+    }
+
     load()
     loadRewards()
+    loadRegistrations()
 
     return () => {
       cancelled = true
@@ -296,6 +356,44 @@ export default function UserProfilePage() {
               <BadgeWall playerAddress={publicKey} />
             </section>
 
+            {/* #355 — Registered Hunts */}
+            <section aria-label="Registered hunts" className="mt-10">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold bg-linear-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent">
+                    Registered Hunts
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Upcoming and active hunts you have registered for
+                  </p>
+                </div>
+                <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-xs font-bold">
+                  {registrations.length} registration{registrations.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {registrations.length === 0 ? (
+                <div
+                  data-testid="registrations-empty"
+                  className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600"
+                >
+                  You haven&apos;t registered for any upcoming hunts yet.{" "}
+                  <Link href="/" className="text-indigo-600 underline underline-offset-2">
+                    Browse the arcade
+                  </Link>{" "}
+                  to find your next challenge.
+                </div>
+              ) : (
+                <ul className="space-y-3" data-testid="registrations-list">
+                  {registrations.map((reg) => (
+                    <li key={reg.huntId}>
+                      <RegistrationCard registration={reg} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
             <section aria-label="Hunt history" className="mt-10 space-y-8">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-xl md:text-2xl font-semibold bg-linear-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent">
@@ -377,6 +475,89 @@ function StatPill({
       <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
       <span className={`text-xl font-semibold text-slate-900 ${valueClassName ?? ""}`}>{value}</span>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// #355 — RegistrationCard
+// ---------------------------------------------------------------------------
+
+const REGISTRATION_STATUS_STYLES: Record<
+  RegisteredHunt["status"],
+  { badge: string; dot: string }
+> = {
+  Registered:   { badge: "bg-blue-50 text-blue-700 border border-blue-200",    dot: "bg-blue-400"   },
+  "In Progress":{ badge: "bg-amber-50 text-amber-700 border border-amber-200",  dot: "bg-amber-400" },
+  Completed:    { badge: "bg-emerald-50 text-emerald-700 border border-emerald-200", dot: "bg-emerald-400" },
+}
+
+function RegistrationCard({ registration }: { registration: RegisteredHunt }) {
+  const { badge, dot } = REGISTRATION_STATUS_STYLES[registration.status]
+  const isCompleted = registration.status === "Completed"
+  const isActive    = registration.status === "In Progress"
+
+  return (
+    <Card className="border border-slate-200 bg-white/80 shadow-sm">
+      <CardContent className="py-4 px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span
+            className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`}
+            aria-hidden="true"
+          />
+          <div>
+            <p className="font-semibold text-slate-900 text-sm md:text-base">
+              {registration.title}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Starts:{" "}
+              <span className="font-medium text-slate-700">
+                {new Date(registration.startTime * 1000).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 self-end sm:self-center">
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${badge}`}>
+            {registration.status}
+          </span>
+
+          {isCompleted ? (
+            <Link href={`/hunt/${registration.huntId}/leaderboard`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs rounded-full border-slate-300 hover:bg-slate-50"
+              >
+                Leaderboard
+              </Button>
+            </Link>
+          ) : isActive ? (
+            <Link href={`/hunt/${registration.huntId}`}>
+              <Button
+                size="sm"
+                className="text-xs rounded-full bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                Play Now
+              </Button>
+            </Link>
+          ) : (
+            <Link href={`/hunt/${registration.huntId}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs rounded-full border-slate-300 hover:bg-slate-50"
+              >
+                View Hunt
+              </Button>
+            </Link>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

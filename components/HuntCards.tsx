@@ -237,6 +237,17 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
             )}
             <span className="text-[#B3B3E5] print:text-black text-xs sm:text-sm">{currentIndex}/{totalHunts}</span>
           </div>
+          {hunt.difficulty && (
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-xs font-semibold ml-2 print:border print:text-black",
+              hunt.difficulty === "Easy" && "bg-green-500/30 text-green-200 print:border-green-500",
+              hunt.difficulty === "Medium" && "bg-yellow-500/30 text-yellow-200 print:border-yellow-500",
+              hunt.difficulty === "Hard" && "bg-red-500/30 text-red-200 print:border-red-500",
+            )}>
+              {hunt.difficulty}
+            </span>
+          )}
+          <span className="text-[#B3B3E5] ml-auto print:text-black text-xs sm:text-sm">{currentIndex}/{totalHunts}</span>
         </div>
         {/* Player count — shown below the title row, above description */}
         <span
