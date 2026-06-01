@@ -21,20 +21,37 @@ export function DisconnectWalletModal({ visible, onCancel, onConfirm, isLoading 
   const { colors } = useTheme();
 
   return (
-    <Modal transparent animationType="fade" visible={visible}>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      accessibilityViewIsModal={true}
+      onRequestClose={onCancel}
+    >
       <View style={styles.overlay}>
         <View style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <View style={[styles.iconWrap, { backgroundColor: colors.error + "18" }]}>
             <Ionicons name="wallet-outline" size={28} color={colors.error} />
           </View>
 
-          <Text style={[styles.title, { color: colors.text }]}>Disconnect Wallet</Text>
-          <Text style={[styles.body, { color: colors.secondary }]}>
+          <Text
+            accessible={true}
+            accessibilityRole="header"
+            style={[styles.title, { color: colors.text }]}
+          >
+            Disconnect Wallet
+          </Text>
+          <Text accessible={true} style={[styles.body, { color: colors.secondary }]}>
             You'll be signed out and your wallet will be unlinked from this
             device. Your assets remain safe on-chain.
           </Text>
 
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Confirm disconnect wallet"
+            accessibilityHint="Disconnects your wallet from this device"
+            accessibilityState={{ disabled: isLoading, busy: isLoading }}
             style={[styles.confirmBtn, { backgroundColor: colors.error }]}
             onPress={onConfirm}
             disabled={isLoading}
@@ -46,7 +63,14 @@ export function DisconnectWalletModal({ visible, onCancel, onConfirm, isLoading 
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
+          <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            accessibilityHint="Closes dialog without disconnecting"
+            style={styles.cancelBtn}
+            onPress={onCancel}
+          >
             <Text style={[styles.cancelText, { color: colors.secondary }]}>Cancel</Text>
           </TouchableOpacity>
         </View>

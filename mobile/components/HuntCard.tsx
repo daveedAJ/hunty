@@ -15,6 +15,10 @@ export function HuntCard({ hunt }: HuntCardProps) {
 
   return (
     <Pressable
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`${hunt.title}. ${hunt.description ?? ''}`}
+      accessibilityHint="Opens hunt details"
       testID={`hunt-card-${hunt.id}`}
       onPress={() => router.push(`/hunt/${hunt.id}`)}
     >

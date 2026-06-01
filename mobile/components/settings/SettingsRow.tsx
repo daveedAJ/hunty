@@ -27,6 +27,11 @@ export function SettingsRow({
 
   return (
     <TouchableOpacity
+      accessible={true}
+      accessibilityRole={type === "toggle" ? "switch" : "button"}
+      accessibilityLabel={label}
+      accessibilityHint={description}
+      accessibilityState={type === "toggle" ? { checked: value } : undefined}
       style={[styles.row, { backgroundColor: colors.background }]}
       onPress={onPress}
       activeOpacity={type === "toggle" ? 1 : 0.6}
@@ -67,6 +72,9 @@ export function SettingsRow({
       <View style={styles.right}>
         {type === "toggle" && (
           <Switch
+            accessible={true}
+            accessibilityLabel={`${label} toggle`}
+            accessibilityState={{ checked: value }}
             value={value}
             onValueChange={onToggle}
             trackColor={{ false: colors.border, true: colors.primary }}

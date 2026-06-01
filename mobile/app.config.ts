@@ -38,25 +38,43 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: config.icon,
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#1f2937",
     },
     ios: {
       bundleIdentifier: config.bundleId,
       supportsTablet: true,
       infoPlist: {
         UIViewControllerBasedStatusBarAppearance: true,
+        LSApplicationQueriesSchemes: [
+          "wc",
+          "rainbow",
+          "metamask",
+          "trust",
+          "safe",
+          "uniswap",
+          "lobstr",
+          "freighter",
+        ],
       },
     },
     android: {
       package: config.androidPackage,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#1f2937",
       },
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [{ scheme: "hunty" }, { scheme: "wc" }],
+          category: ["DEFAULT", "BROWSABLE"],
+        },
+      ],
     },
     updates: {
       url: "https://u.expo.dev/YOUR_EAS_PROJECT_ID",
@@ -67,6 +85,7 @@ export default {
     extra: {
       appEnv: ENV,
       apiUrl: config.apiUrl,
+      walletConnectProjectId: process.env.WALLETCONNECT_PROJECT_ID ?? "",
       eas: {
         projectId: "YOUR_EAS_PROJECT_ID",
       },

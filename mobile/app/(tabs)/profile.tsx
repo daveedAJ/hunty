@@ -1,251 +1,126 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
-import { ThemedView, ThemedCustomText, ThemedButton } from "@components/themed";
-import { useTheme } from "@providers/ThemeProvider";
-import { useWalletStore } from "@store/useStore";
-import { formatISOString } from "@lib/dateUtils";
-import type {
-  PlayerHuntProgress,
-  NftRewardDetail,
-  ProfileSummary,
-} from "@lib/types";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
+import { EmptyState } from '@components/EmptyState';
+import { useTheme } from '@providers/ThemeProvider';
+import { useWalletStore } from '@store/useStore';
+import { formatISOString } from '@lib/dateUtils';
+import type { NftRewardDetail, PlayerHuntProgress, ProfileSummary } from '@lib/types';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Colors = ReturnType<typeof useTheme>["colors"];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+type Colors = ReturnType<typeof useTheme>['colors'];
 
 function shortenAddress(address: string, chars = 6): string {
   if (!address || address.length <= chars * 2 + 3) return address;
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
 
-async function fetchPlayerHunts(
-  _address: string,
-): Promise<PlayerHuntProgress[]> {
-  if (!_address) return [];
+async function fetchPlayerHunts(address: string): Promise<PlayerHuntProgress[]> {
+  if (!address) return [];
   return [
     {
       id: 1,
-      title: "City Secrets",
-      description: "Race across town to uncover hidden murals and landmarks.",
+      title: 'City Secrets',
+      description: 'Race across town to uncover hidden murals and landmarks.',
       totalClues: 5,
-      status: "Completed",
+      status: 'Completed',
       pointsEarned: 12,
-      startedAt: "2026-02-10T14:32:00Z",
-      completedAt: "2026-02-10T15:12:00Z",
+      startedAt: '2026-02-10T14:32:00Z',
+      completedAt: '2026-02-10T15:12:00Z',
     },
     {
       id: 2,
-      title: "Campus Quest",
-      description:
-        "Solve riddles scattered around campus before the timer ends.",
+      title: 'Campus Quest',
+      description: 'Solve riddles scattered around campus before the timer ends.',
       totalClues: 7,
-      status: "In-Progress",
+      status: 'In-Progress',
       pointsEarned: 4,
-      startedAt: "2026-02-18T17:05:00Z",
-    },
-    {
-      id: 3,
-      title: "Office Onboarding Hunt",
-      description: "A playful intro game for new teammates around the office.",
-      totalClues: 4,
-      status: "Completed",
-      pointsEarned: 9,
-      startedAt: "2026-02-20T11:00:00Z",
-      completedAt: "2026-02-20T11:25:00Z",
+      startedAt: '2026-02-18T17:05:00Z',
     },
   ];
 }
 
-async function fetchPlayerRewards(
-  _address: string,
-): Promise<NftRewardDetail[]> {
-  if (!_address) return [];
+async function fetchPlayerRewards(address: string): Promise<NftRewardDetail[]> {
+  if (!address) return [];
   return [
     {
       id: 1,
-      name: "Golden Compass",
-      description:
-        "A legendary artifact awarded to those who uncover all secret murals.",
-      imageUri: "/static-images/nft1.png",
-      earnedAt: "2026-02-10T15:16:00Z",
+      name: 'Golden Compass',
+      description: 'Awarded to those who uncover all secret murals.',
+      imageUri: '/static-images/nft1.png',
+      earnedAt: '2026-02-10T15:16:00Z',
       claimed: true,
-      huntName: "City Secrets",
-      attributes: [
-        { trait_type: "Rarity", value: "Legendary" },
-        { trait_type: "Type", value: "Utility" },
-      ],
+      huntName: 'City Secrets',
     },
     {
       id: 2,
-      name: "Explorer Trophy",
-      description:
-        "Granted for completing the Office Onboarding challenge within the time limit.",
-      imageUri: "/static-images/nft2.png",
-      earnedAt: "2026-02-20T11:26:00Z",
+      name: 'Explorer Trophy',
+      description: 'Granted for completing a hunt within the time limit.',
+      imageUri: '/static-images/nft2.png',
+      earnedAt: '2026-02-20T11:26:00Z',
       claimed: false,
-      huntName: "Office Onboarding",
-      attributes: [
-        { trait_type: "Rarity", value: "Rare" },
-        { trait_type: "Level", value: 5 },
-      ],
-    },
-    {
-      id: 3,
-      name: "Soroban Sage",
-      description:
-        "Awarded to players who demonstrate exceptional knowledge of smart contract riddles.",
-      imageUri: "ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-      earnedAt: "2026-03-05T09:45:00Z",
-      claimed: true,
-      huntName: "Stellar Developer Hunt",
-      attributes: [
-        { trait_type: "Rarity", value: "Epic" },
-        { trait_type: "Skill", value: "Contracting" },
-      ],
+      huntName: 'Office Onboarding',
     },
   ];
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function LabelValue({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  return (
-    <View style={styles.labelValueRow}>
-      <ThemedCustomText variant="caption">{label} </ThemedCustomText>
-      <ThemedCustomText
-        variant="body"
-        weight="500"
-        style={valueColor ? { color: valueColor } : undefined}
-      >
-        {value}
-      </ThemedCustomText>
-    </View>
-  );
 }
 
 function StatPill({
   label,
   value,
-  highlight,
   colors,
 }: {
   label: string;
   value: number;
-  highlight?: "success";
   colors: Colors;
 }) {
   return (
-    <View
-      style={[
-        styles.statPill,
-        { backgroundColor: colors.background, borderColor: colors.border },
-      ]}
-    >
+    <View style={[styles.statPill, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <ThemedCustomText variant="caption" style={styles.statLabel}>
         {label}
       </ThemedCustomText>
-      <ThemedCustomText
-        variant="body"
-        weight="600"
-        color={highlight === "success" ? "success" : "text"}
-        style={styles.statValue}
-      >
+      <ThemedCustomText variant="body" weight="700" style={styles.statValue}>
         {value}
       </ThemedCustomText>
     </View>
   );
 }
 
-function HuntCard({
-  hunt,
-  colors,
-}: {
-  hunt: PlayerHuntProgress;
-  colors: Colors;
-}) {
-  const isCompleted = hunt.status === "Completed";
+function HuntCard({ hunt, colors }: { hunt: PlayerHuntProgress; colors: Colors }) {
+  const isCompleted = hunt.status === 'Completed';
   const statusColor = isCompleted ? colors.success : colors.warning;
 
   return (
-    <View
-      style={[
-        styles.huntCard,
-        { backgroundColor: colors.background, borderColor: colors.border },
-      ]}
-    >
-      <View style={styles.huntCardHeader}>
-        <View style={styles.huntCardTitleContainer}>
-          <ThemedCustomText
-            variant="body"
-            weight="600"
-            style={styles.huntCardTitle}
-          >
+    <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardTitleWrap}>
+          <ThemedCustomText variant="body" weight="700">
             {hunt.title}
           </ThemedCustomText>
-          <ThemedCustomText
-            variant="caption"
-            style={styles.huntCardDescription}
-          >
+          <ThemedCustomText variant="caption" style={styles.muted}>
             {hunt.description}
           </ThemedCustomText>
         </View>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusColor + "20", borderColor: statusColor },
-          ]}
-        >
-          <ThemedCustomText
-            variant="caption"
-            weight="500"
-            style={{ color: statusColor }}
-          >
-            {isCompleted ? "Completed" : "In Progress"}
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
+          <ThemedCustomText variant="caption" weight="700" style={{ color: statusColor }}>
+            {isCompleted ? 'Completed' : 'In Progress'}
           </ThemedCustomText>
         </View>
       </View>
 
-      <View style={styles.huntCardContent}>
-        <LabelValue
-          label="Clues:"
-          value={`${hunt.pointsEarned}/${hunt.totalClues}`}
-        />
-        <LabelValue
-          label="Points:"
-          value={String(hunt.pointsEarned)}
-          valueColor={colors.success}
-        />
-        {hunt.startedAt && (
-          <LabelValue
-            label="Started:"
-            value={formatISOString(hunt.startedAt)}
-          />
-        )}
-        {hunt.completedAt && (
-          <LabelValue
-            label="Finished:"
-            value={formatISOString(hunt.completedAt)}
-          />
-        )}
+      <View style={styles.metaRow}>
+        <ThemedCustomText variant="caption">
+          Clues: {hunt.pointsEarned}/{hunt.totalClues}
+        </ThemedCustomText>
+        <ThemedCustomText variant="caption">Points: {hunt.pointsEarned}</ThemedCustomText>
       </View>
-
+      <ThemedCustomText variant="caption" style={styles.muted}>
+        Started {formatISOString(hunt.startedAt)}
+      </ThemedCustomText>
+      {hunt.completedAt ? (
+        <ThemedCustomText variant="caption" style={styles.muted}>
+          Finished {formatISOString(hunt.completedAt)}
+        </ThemedCustomText>
+      ) : null}
       <ThemedButton text="View details" variant="ghost" size="sm" fullWidth />
     </View>
   );
@@ -253,109 +128,27 @@ function HuntCard({
 
 function NftCard({ nft, colors }: { nft: NftRewardDetail; colors: Colors }) {
   return (
-    <View
-      style={[
-        styles.nftCard,
-        { backgroundColor: colors.background, borderColor: colors.border },
-      ]}
-    >
-      <View style={styles.nftImageContainer}>
-        <View
-          style={[
-            styles.nftBadge,
-            { backgroundColor: nft.claimed ? colors.success : colors.warning },
-          ]}
-        />
+    <View style={[styles.nftCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <View style={[styles.nftPreview, { backgroundColor: nft.claimed ? colors.success + '20' : colors.warning + '20' }]}>
+        <View style={[styles.nftDot, { backgroundColor: nft.claimed ? colors.success : colors.warning }]} />
       </View>
       <View style={styles.nftContent}>
-        <ThemedCustomText
-          variant="caption"
-          style={[styles.nftHuntName, { color: colors.primary }]}
-        >
-          {nft.huntName ?? "Scavenger Hunt"}
+        <ThemedCustomText variant="caption" color="primary">
+          {nft.huntName ?? 'Scavenger Hunt'}
         </ThemedCustomText>
-        <ThemedCustomText variant="body" weight="600" style={styles.nftName}>
+        <ThemedCustomText variant="body" weight="700">
           {nft.name}
         </ThemedCustomText>
-        <ThemedCustomText variant="caption" style={styles.nftId}>
-          #{nft.id.toString().padStart(4, "0")}
+        <ThemedCustomText variant="caption" style={styles.muted}>
+          #{nft.id.toString().padStart(4, '0')}
         </ThemedCustomText>
       </View>
     </View>
   );
 }
-
-function NftGallery({
-  nfts,
-  colors,
-}: {
-  nfts: NftRewardDetail[];
-  colors: Colors;
-}) {
-  if (nfts.length === 0) {
-    return (
-      <View
-        style={[
-          styles.emptyDashedCard,
-          {
-            backgroundColor: colors.background + "40",
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <ThemedCustomText variant="h3" style={styles.centeredBold}>
-          No trophies yet
-        </ThemedCustomText>
-        <ThemedCustomText variant="caption" style={styles.centeredCaption}>
-          Complete hunts to earn exclusive NFT rewards and build your
-          collection!
-        </ThemedCustomText>
-      </View>
-    );
-  }
-  return (
-    <View style={styles.nftGrid}>
-      {nfts.map((nft) => (
-        <NftCard key={nft.id} nft={nft} colors={colors} />
-      ))}
-    </View>
-  );
-}
-
-function HuntColumn({
-  title,
-  hunts,
-  emptyText,
-  colors,
-}: {
-  title: string;
-  hunts: PlayerHuntProgress[];
-  emptyText: string;
-  colors: Colors;
-}) {
-  return (
-    <View style={styles.historyColumn}>
-      <ThemedCustomText variant="h3" style={styles.columnTitle}>
-        {title}
-      </ThemedCustomText>
-      {hunts.length === 0 ? (
-        <ThemedCustomText variant="body" style={styles.emptyColumnText}>
-          {emptyText}
-        </ThemedCustomText>
-      ) : (
-        <View style={styles.list}>
-          {hunts.map((hunt) => (
-            <HuntCard key={hunt.id} hunt={hunt} colors={colors} />
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { walletAddress, isConnected, watchOnlyAddress } = useWalletStore();
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([]);
@@ -366,20 +159,15 @@ export default function ProfileScreen() {
 
   const activeAddress = isConnected ? walletAddress : watchOnlyAddress;
   const usingWatchOnly = !isConnected && Boolean(watchOnlyAddress);
-  const displayAddress = activeAddress ? shortenAddress(activeAddress) : "Not connected";
-
-  const loadProfileData = async () => {
-    if (!activeAddress) {
-  const displayAddress = walletAddress
-    ? shortenAddress(walletAddress)
-    : "Not connected";
+  const displayAddress = activeAddress ? shortenAddress(activeAddress) : 'Not connected';
 
   const loadProfileData = useCallback(async () => {
-    if (!isConnected || !walletAddress) {
+    if (!activeAddress) {
       setHunts([]);
       setNftRewards([]);
       return;
     }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -390,17 +178,13 @@ export default function ProfileScreen() {
       setHunts(huntsData);
       setNftRewards(rewardsData);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load profile data.",
-      );
+      setError(err instanceof Error ? err.message : 'Failed to load profile data.');
     } finally {
       setIsLoading(false);
     }
-  }, [isConnected, walletAddress]);
+  }, [activeAddress]);
 
   useEffect(() => {
-    loadProfileData();
-  }, [activeAddress]);
     void loadProfileData();
   }, [loadProfileData]);
 
@@ -411,267 +195,114 @@ export default function ProfileScreen() {
   };
 
   const summary = useMemo((): ProfileSummary => {
-    const completedHunts = hunts.filter((h) => h.status === "Completed").length;
+    const completedHunts = hunts.filter((hunt) => hunt.status === 'Completed').length;
     return {
       totalHunts: hunts.length,
       completedHunts,
-      inProgressHunts: hunts.filter((h) => h.status === "In-Progress").length,
-      totalPoints: hunts.reduce((sum, h) => sum + h.pointsEarned, 0),
-      completionRate: hunts.length
-        ? Math.round((completedHunts / hunts.length) * 100)
-        : 0,
+      inProgressHunts: hunts.filter((hunt) => hunt.status === 'In-Progress').length,
+      totalPoints: hunts.reduce((sum, hunt) => sum + hunt.pointsEarned, 0),
+      completionRate: hunts.length ? Math.round((completedHunts / hunts.length) * 100) : 0,
       totalNftRewards: nftRewards.length,
-      claimedNftRewards: nftRewards.filter((n) => n.claimed).length,
-      unclaimedNftRewards: nftRewards.filter((n) => !n.claimed).length,
+      claimedNftRewards: nftRewards.filter((nft) => nft.claimed).length,
+      unclaimedNftRewards: nftRewards.filter((nft) => !nft.claimed).length,
     };
   }, [hunts, nftRewards]);
 
-  const completedHuntsList = useMemo(
-    () => hunts.filter((h) => h.status === "Completed"),
-    [hunts],
-  );
-  const inProgressHuntsList = useMemo(
-    () => hunts.filter((h) => h.status === "In-Progress"),
-    [hunts],
-  );
-
   if (!activeAddress) {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <ThemedCustomText variant="h2" style={styles.centeredBold}>
-            Connect your wallet
-          </ThemedCustomText>
-          <ThemedCustomText variant="body" style={styles.centeredCaption}>
-            Your profile uses the connected Stellar address to load hunts you've
-            played and aggregate your points across games.
-          </ThemedCustomText>
-          <ThemedCustomText variant="caption" style={styles.emptyHint}>
-            Use the Connect Wallet button or add a watch-only address in Settings.
-          </ThemedCustomText>
-        </View>
-      </ThemedView>
+      <EmptyState
+        icon="👛"
+        title="Connect your wallet"
+        description="Your profile uses the connected Stellar address to load hunts played and points earned."
+        action={{
+          label: 'Go to Settings',
+          onPress: () => router.push('/(tabs)/settings'),
+        }}
+      />
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
       >
-        {/* Header */}
         <View style={styles.header}>
           <ThemedCustomText variant="h2" style={styles.centeredBold}>
             Player Profile
           </ThemedCustomText>
-          <ThemedCustomText variant="caption" style={styles.subtitle}>
+          <ThemedCustomText variant="caption" style={styles.centeredCaption}>
             View your hunt history, progress, and total points earned.
           </ThemedCustomText>
-          <View style={[styles.walletCard, { backgroundColor: colors.primary + "10", borderColor: colors.border }]}>
+          <View style={[styles.walletCard, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}>
             <ThemedCustomText variant="caption" style={styles.walletLabel}>
               {usingWatchOnly ? 'Watch-only Address' : 'Connected Wallet'}
             </ThemedCustomText>
-            {usingWatchOnly ? (
-              <ThemedCustomText variant="caption" color="info">Watch-only mode</ThemedCustomText>
-            ) : null}
             <ThemedCustomText variant="label" weight="600" style={styles.walletAddress}>
-          <View
-            style={[
-              styles.walletCard,
-              {
-                backgroundColor: colors.primary + "10",
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <ThemedCustomText variant="caption" style={styles.walletLabel}>
-              Connected Wallet
-            </ThemedCustomText>
-            <ThemedCustomText
-              variant="label"
-              weight="600"
-              style={styles.walletAddress}
-            >
               {displayAddress}
             </ThemedCustomText>
           </View>
         </View>
 
-        {isLoading && !refreshing && (
+        {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={colors.primary} />
           </View>
-        )}
-
-        {!isLoading && (
+        ) : (
           <>
-            {/* Stats */}
             <View style={styles.section}>
               <ThemedCustomText variant="h3" style={styles.sectionTitle}>
                 Summary Statistics
               </ThemedCustomText>
-              <ThemedCustomText
-                variant="caption"
-                style={styles.sectionDescription}
-              >
-                Aggregated from all hunts via get_player_progress.
+              <View style={styles.statsGrid}>
+                <StatPill label="Total Hunts" value={summary.totalHunts} colors={colors} />
+                <StatPill label="Completed" value={summary.completedHunts} colors={colors} />
+                <StatPill label="In Progress" value={summary.inProgressHunts} colors={colors} />
+                <StatPill label="Total Points" value={summary.totalPoints} colors={colors} />
+                <StatPill label="NFT Rewards" value={summary.totalNftRewards} colors={colors} />
+                <StatPill label="Completion %" value={summary.completionRate} colors={colors} />
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <ThemedCustomText variant="h3" style={styles.sectionTitle}>
+                Digital Trophies
               </ThemedCustomText>
-              <View style={styles.statsGrid}>
-                <StatPill
-                  label="Total Hunts Played"
-                  value={summary.totalHunts}
-                  colors={colors}
-                />
-                <StatPill
-                  label="Completed Hunts"
-                  value={summary.completedHunts}
-                  colors={colors}
-                />
-                <StatPill
-                  label="In-Progress Hunts"
-                  value={summary.inProgressHunts}
-                  colors={colors}
-                />
-                <StatPill
-                  label="Total Points Earned"
-                  value={summary.totalPoints}
-                  colors={colors}
-                  highlight="success"
-                />
-              </View>
-              <View style={styles.statsGrid}>
-                <StatPill
-                  label="NFT Rewards"
-                  value={summary.totalNftRewards}
-                  colors={colors}
-                />
-                <StatPill
-                  label="NFTs Claimed"
-                  value={summary.claimedNftRewards}
-                  colors={colors}
-                />
-                <StatPill
-                  label="NFTs Unclaimed"
-                  value={summary.unclaimedNftRewards}
-                  colors={colors}
-                />
-              </View>
-              <View style={styles.completionRow}>
-                <ThemedCustomText variant="caption">
-                  Completion rate:
-                </ThemedCustomText>
-                <ThemedCustomText variant="body" weight="600">
-                  {summary.completionRate}%
-                </ThemedCustomText>
-              </View>
-            </View>
-
-            {/* NFTs */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View>
-                  <ThemedCustomText variant="h3" style={styles.sectionTitle}>
-                    Digital Trophies
-                  </ThemedCustomText>
-                  <ThemedCustomText
-                    variant="caption"
-                    style={styles.sectionDescription}
-                  >
-                    Collectible rewards earned through your achievements
-                  </ThemedCustomText>
-                </View>
-                <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: colors.primary + "20" },
-                  ]}
-                >
-                  <ThemedCustomText
-                    variant="caption"
-                    weight="600"
-                    style={{ color: colors.primary }}
-                  >
-                    {nftRewards.length} Unlocked
-                  </ThemedCustomText>
-                </View>
-              </View>
-              <NftGallery nfts={nftRewards} colors={colors} />
-            </View>
-
-            {/* Hunt History */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <ThemedCustomText variant="h3" style={styles.sectionTitle}>
-                  Hunt History
-                </ThemedCustomText>
-                {refreshing && (
-                  <ThemedCustomText
-                    variant="caption"
-                    style={styles.refreshingText}
-                  >
-                    Refreshing...
-                  </ThemedCustomText>
+              <View style={styles.nftGrid}>
+                {nftRewards.length === 0 ? (
+                  <EmptyState
+                    icon="🏆"
+                    title="No trophies yet"
+                    description="Complete your first hunt to earn NFT trophies and rewards."
+                    action={{
+                      label: 'Browse Hunts',
+                      onPress: () => {},
+                    }}
+                  />
+                ) : (
+                  nftRewards.map((nft) => <NftCard key={nft.id} nft={nft} colors={colors} />)
                 )}
               </View>
+            </View>
 
-              {error && (
-                <View
-                  style={[
-                    styles.errorCard,
-                    {
-                      backgroundColor: colors.error + "20",
-                      borderColor: colors.error,
-                    },
-                  ]}
-                >
-                  <ThemedCustomText
-                    variant="body"
-                    style={{ color: colors.error }}
-                  >
+            <View style={styles.section}>
+              <ThemedCustomText variant="h3" style={styles.sectionTitle}>
+                Hunt History
+              </ThemedCustomText>
+              {error ? (
+                <View style={[styles.errorCard, { backgroundColor: colors.error + '20', borderColor: colors.error }]}>
+                  <ThemedCustomText variant="body" color="error">
                     {error}
                   </ThemedCustomText>
                 </View>
-              )}
-
-              {!hunts.length && !error ? (
-                <View
-                  style={[
-                    styles.emptyDashedCard,
-                    {
-                      backgroundColor: colors.background + "80",
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <ThemedCustomText variant="body">
-                    You haven't played any hunts yet. Join a game from the
-                    arcade to see your history here.
-                  </ThemedCustomText>
-                </View>
-              ) : (
-                <View style={styles.historyGrid}>
-                  <HuntColumn
-                    title="In-Progress Hunts"
-                    hunts={inProgressHuntsList}
-                    emptyText="No hunts currently in progress. Jump into a new game from the arcade."
-                    colors={colors}
-                  />
-                  <HuntColumn
-                    title="Completed Hunts"
-                    hunts={completedHuntsList}
-                    emptyText="You haven't completed any hunts yet. Finish a game to see it here."
-                    colors={colors}
-                  />
-                </View>
-              )}
+              ) : null}
+              <View style={styles.list}>
+                {hunts.map((hunt) => (
+                  <HuntCard key={hunt.id} hunt={hunt} colors={colors} />
+                ))}
+              </View>
             </View>
           </>
         )}
@@ -680,118 +311,41 @@ export default function ProfileScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, gap: 24 },
   header: { gap: 12 },
-  subtitle: { marginTop: 4 },
   walletCard: { padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 8 },
   walletLabel: { opacity: 0.7, marginBottom: 4 },
-  walletAddress: { fontFamily: "monospace" },
+  walletAddress: { fontFamily: 'monospace' },
   section: { gap: 12 },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  sectionTitle: { fontWeight: "600" },
-  sectionDescription: { marginTop: 4, opacity: 0.7 },
-  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9999 },
-  refreshingText: { opacity: 0.7 },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  sectionTitle: { fontWeight: '600' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   statPill: {
     flex: 1,
-    minWidth: "45%",
+    minWidth: '45%',
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
   },
   statLabel: { opacity: 0.7, marginBottom: 4 },
   statValue: { fontSize: 24 },
-  completionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  errorCard: { padding: 16, borderRadius: 12, borderWidth: 1 },
-  emptyDashedCard: {
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    alignItems: "center",
-  },
-  historyGrid: { gap: 24 },
-  historyColumn: { gap: 12 },
-  columnTitle: { fontWeight: "600" },
-  emptyColumnText: { opacity: 0.6 },
+  card: { padding: 16, borderRadius: 16, borderWidth: 1, gap: 12 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  cardTitleWrap: { flex: 1, gap: 4 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  muted: { opacity: 0.7 },
   list: { gap: 12 },
-  huntCard: { padding: 16, borderRadius: 16, borderWidth: 1, gap: 12 },
-  huntCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  huntCardTitleContainer: { flex: 1, gap: 4 },
-  huntCardTitle: { fontSize: 16 },
-  huntCardDescription: { opacity: 0.7 },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    borderWidth: 1,
-  },
-  huntCardContent: { gap: 4 },
-  labelValueRow: { flexDirection: "row" },
-  nftGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  nftCard: {
-    width: "47%",
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  nftImageContainer: {
-    aspectRatio: 1,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  nftBadge: { width: 12, height: 12, borderRadius: 6 },
+  nftGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  nftCard: { width: '47%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  nftPreview: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  nftDot: { width: 12, height: 12, borderRadius: 6 },
   nftContent: { padding: 12, gap: 4 },
-  nftHuntName: { opacity: 0.7, fontWeight: "400" },
-  nftName: { fontSize: 14 },
-  nftId: { opacity: 0.5 },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    textAlign: "center",
-    fontWeight: "700",
-  },
-  emptyText: {
-    textAlign: "center",
-    maxWidth: 300,
-  },
-  emptyHint: {
-    marginTop: 8,
-    opacity: 0.7,
-  },
-  loadingContainer: {
-    paddingVertical: 48,
-    alignItems: "center",
-  },
-  centeredBold: { textAlign: "center", fontWeight: "700" },
-  centeredCaption: { textAlign: "center", maxWidth: 300 },
-  emptyHint: { marginTop: 8, opacity: 0.7 },
-  loadingContainer: { paddingVertical: 48, alignItems: "center" },
+  errorCard: { padding: 16, borderRadius: 12, borderWidth: 1 },
+  centeredBold: { textAlign: 'center', fontWeight: '700' },
+  centeredCaption: { textAlign: 'center', maxWidth: 300 },
+  loadingContainer: { paddingVertical: 48, alignItems: 'center' },
 });

@@ -9,8 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useTheme } from '@providers/ThemeProvider';
-import { useTheme } from '../../providers/ThemeProvider';
-import { normalizeFont, MAX_FONT_SCALE } from '../../config/fontScaling';
+import { normalizeFont, MAX_FONT_SCALE } from '@config/fontScaling';
 import { ThemedCustomText } from './ThemedCustomText';
 
 type InputSize = 'sm' | 'md' | 'lg';
@@ -65,8 +64,10 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
   return (
     <View style={containerStyle}>
       <TextInput
+        accessible={true}
         accessibilityLabel={accessibilityLabel || props.placeholder || 'Input field'}
         accessibilityHint={hasError ? error : helperText}
+        accessibilityState={{ disabled: props.editable === false }}
         placeholderTextColor={derivedPlaceholderColor}
         allowFontScaling={allowFontScaling}
         maxFontSizeMultiplier={maxFontSizeMultiplier}

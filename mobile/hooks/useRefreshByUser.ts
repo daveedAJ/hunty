@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { useCallback, useState } from 'react';
 
 export function useRefreshByUser(refetch: () => Promise<unknown>) {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,8 +13,4 @@ export function useRefreshByUser(refetch: () => Promise<unknown>) {
   }, [refetch]);
 
   return { isRefreshing, onRefresh };
-  return {
-    isRefreshing,
-    onRefresh,
-  };
 }

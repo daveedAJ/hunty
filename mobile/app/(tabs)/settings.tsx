@@ -1,17 +1,24 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedView, ThemedCustomText, ThemedButton, ThemedInput } from '@components/themed';
+import { ThemedButton, ThemedCustomText, ThemedInput, ThemedView } from '@components/themed';
+import { SettingsRow } from '@components/settings/SettingsRow';
+import { SettingsSection } from '@components/settings/SettingsSection';
+import { DisconnectWalletModal } from '@components/settings/DisconnectWalletModal';
+import { useNotifications } from '@hooks/useNotifications';
 import { useTheme } from '@providers/ThemeProvider';
-import { useWalletStore } from '@store/useStore';
 import { useToast } from '@providers/ToastProvider';
+import { useWalletStore } from '@store/useStore';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { showToast } = useToast();
-  const { network, watchOnlyAddress, setWatchOnlyAddress, clearWatchOnlyAddress } = useWalletStore();
+  const { enabled: notificationsEnabled, toggle: toggleNotifications } = useNotifications();
+  const { network, watchOnlyAddress, setWatchOnlyAddress, clearWatchOnlyAddress, clearWallet } = useWalletStore();
   const [inputAddress, setInputAddress] = useState(watchOnlyAddress);
+  const [showDisconnect, setShowDisconnect] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const isMainnet = network === 'mainnet';
   const isValidWatchAddress = useMemo(() => /^G[A-Z2-7]{55}$/.test(inputAddress.trim()), [inputAddress]);
@@ -32,88 +39,64 @@ export default function SettingsScreen() {
     showToast({ message: 'Watch-only address removed.', type: 'info' });
   };
 
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedCustomText variant="h2">Settings</ThemedCustomText>
-      <ThemedCustomText variant="body">Configure theme, accessibility, and app preferences.</ThemedCustomText>
-
-      <View style={[styles.networkCard, { borderColor: colors.border, backgroundColor: colors.background }]}> 
-        <ThemedCustomText variant="label" weight="700">Wallet network</ThemedCustomText>
-        <ThemedCustomText variant="body">
-          {network === 'unknown' ? 'Unknown' : network === 'mainnet' ? 'Stellar Mainnet' : 'Stellar Testnet'}
-        </ThemedCustomText>
-        {isMainnet ? (
-          <>
-            <ThemedCustomText variant="caption" color="warning">
-              Hunty transactions require Testnet. Switch networks before joining or completing hunts.
-            </ThemedCustomText>
-            <ThemedButton text="How to switch" variant="ghost" onPress={() => router.push('/network/switch')} />
-          </>
-        ) : null}
-      </View>
-
-      <View style={[styles.networkCard, { borderColor: colors.border, backgroundColor: colors.background }]}> 
-        <ThemedCustomText variant="label" weight="700">Watch-only profile</ThemedCustomText>
-        <ThemedCustomText variant="caption">
-          Add a public Stellar G-address to view hunt history without connecting a signing wallet.
-        </ThemedCustomText>
-        <ThemedInput
-          placeholder="G..."
-          value={inputAddress}
-          onChangeText={setInputAddress}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          error={inputAddress.length > 0 && !isValidWatchAddress ? 'Invalid Stellar public key format.' : undefined}
-        />
-        <ThemedButton text="Save watch address" onPress={handleSaveWatchAddress} disabled={!isValidWatchAddress} />
-        {watchOnlyAddress ? (
-          <ThemedButton text="Clear watch address" variant="ghost" onPress={handleClearWatchAddress} />
-        ) : null}
-      </View>
-    </ThemedView>
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  Linking,
-} from "react-native";
-import { router } from "expo-router";
-import { SettingsSection } from "@components/settings/SettingsSection";
-import { SettingsRow } from "@components/settings/SettingsRow";
-import { DisconnectWalletModal } from "@components/settings/DisconnectWalletModal";
-import { useNotifications } from "../../hooks/useNotifications";
-import { useTheme } from "@providers/ThemeProvider";
-
-export default function SettingsScreen() {
-  const { colors } = useTheme();
-  const { enabled: notificationsEnabled, toggle: toggleNotifications } =
-    useNotifications();
-
-  const [showDisconnect, setShowDisconnect] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      await new Promise((r) => setTimeout(r, 1500));
+      clearWallet();
       setShowDisconnect(false);
-      router.replace("/");
+      router.replace('/');
     } finally {
       setDisconnecting(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[styles.heading, { color: colors.text }]}>Settings</Text>
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ThemedCustomText variant="h2" weight="800">
+          Settings
+        </ThemedCustomText>
+        <ThemedCustomText variant="body" style={styles.subtitle}>
+          Configure theme, wallet safety, notifications, and profile lookup.
+        </ThemedCustomText>
+
+        <View style={[styles.networkCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <ThemedCustomText variant="label" weight="700">
+            Wallet network
+          </ThemedCustomText>
+          <ThemedCustomText variant="body">
+            {network === 'unknown' ? 'Unknown' : network === 'mainnet' ? 'Stellar Mainnet' : 'Stellar Testnet'}
+          </ThemedCustomText>
+          {isMainnet ? (
+            <>
+              <ThemedCustomText variant="caption" color="warning">
+                Hunty transactions require Testnet. Switch networks before joining or completing hunts.
+              </ThemedCustomText>
+              <ThemedButton text="How to switch" variant="ghost" onPress={() => router.push('/network/switch')} />
+            </>
+          ) : null}
+        </View>
+
+        <View style={[styles.networkCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <ThemedCustomText variant="label" weight="700">
+            Watch-only profile
+          </ThemedCustomText>
+          <ThemedCustomText variant="caption">
+            Add a public Stellar G-address to view hunt history without connecting a signing wallet.
+          </ThemedCustomText>
+          <ThemedInput
+            placeholder="G..."
+            value={inputAddress}
+            onChangeText={setInputAddress}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            error={inputAddress.length > 0 && !isValidWatchAddress ? 'Invalid Stellar public key format.' : undefined}
+          />
+          <ThemedButton text="Save watch address" onPress={handleSaveWatchAddress} disabled={!isValidWatchAddress} />
+          {watchOnlyAddress ? (
+            <ThemedButton text="Clear watch address" variant="ghost" onPress={handleClearWatchAddress} />
+          ) : null}
+        </View>
 
         <SettingsSection title="Appearance">
           <SettingsRow
@@ -121,7 +104,7 @@ export default function SettingsScreen() {
             label="Theme"
             description="Light, Dark, or System default"
             type="navigate"
-            onPress={() => router.push("/settings/theme")}
+            onPress={() => router.push('/settings/theme')}
           />
         </SettingsSection>
 
@@ -142,7 +125,7 @@ export default function SettingsScreen() {
             label="Connected Wallet"
             description="View your linked address"
             type="navigate"
-            onPress={() => router.push("/settings/wallet")}
+            onPress={() => router.push('/settings/wallet')}
           />
           <SettingsRow
             icon="log-out-outline"
@@ -158,29 +141,19 @@ export default function SettingsScreen() {
             icon="document-text-outline"
             label="Documentation"
             type="link"
-            onPress={() => Linking.openURL("https://docs.hunty.com")}
+            onPress={() => Linking.openURL('https://docs.hunty.com')}
           />
           <SettingsRow
             icon="help-circle-outline"
             label="Help Center"
             type="link"
-            onPress={() => Linking.openURL("https://support.hunty.com")}
-          />
-          <SettingsRow
-            icon="shield-checkmark-outline"
-            label="Privacy Policy"
-            type="link"
-            onPress={() => Linking.openURL("https://hunty.com/privacy")}
-          />
-          <SettingsRow
-            icon="newspaper-outline"
-            label="Terms of Service"
-            type="link"
-            onPress={() => Linking.openURL("https://hunty.com/terms")}
+            onPress={() => Linking.openURL('https://support.hunty.com')}
           />
         </SettingsSection>
 
-        <Text style={[styles.version, { color: colors.border }]}>Hunty v1.0.0 · development build</Text>
+        <ThemedCustomText variant="caption" style={[styles.version, { color: colors.border }]}>
+          Hunty v1.0.0 development build
+        </ThemedCustomText>
       </ScrollView>
 
       <DisconnectWalletModal
@@ -189,38 +162,27 @@ export default function SettingsScreen() {
         onConfirm={handleDisconnect}
         isLoading={disconnecting}
       />
-    </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   content: {
     padding: 16,
     gap: 12,
+    paddingBottom: 40,
   },
+  subtitle: { opacity: 0.75 },
   networkCard: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
     gap: 8,
     marginTop: 4,
-    paddingBottom: 48,
-  },
-  heading: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 28,
-    marginTop: 8,
   },
   version: {
-    textAlign: "center",
-    fontSize: 12,
+    textAlign: 'center',
     marginTop: 8,
   },
 });

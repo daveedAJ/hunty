@@ -1,8 +1,9 @@
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getActiveHuntsForFeed } from '@store/huntStore';
-import { ThemedCustomText, ThemedView } from '@components/themed';
+import { ThemedCustomText } from '@components/themed';
 import { HuntCard } from '@components/HuntCard';
+import { HuntsListSkeleton } from '@components/skeletons';
 
 export function HuntsList() {
   const { data: hunts = [], isLoading } = useQuery({
@@ -10,12 +11,9 @@ export function HuntsList() {
     queryFn: getActiveHuntsForFeed,
   });
 
+  // #179 — Animated skeleton placeholders while data loads
   if (isLoading) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </ThemedView>
-    );
+    return <HuntsListSkeleton />;
   }
 
   return (
@@ -37,5 +35,4 @@ export function HuntsList() {
 const styles = StyleSheet.create({
   list: { padding: 16, gap: 12 },
   heading: { marginBottom: 8 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

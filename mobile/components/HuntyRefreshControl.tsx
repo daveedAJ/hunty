@@ -6,16 +6,16 @@ interface Props extends RefreshControlProps {
   refreshing: boolean;
 }
 
-/**
- * Standardized RefreshControl with Hunty brand colors.
- */
 export const HuntyRefreshControl = ({ refreshing, onRefresh, ...props }: Props) => {
   return (
     <RefreshControl
+      accessible={true}
+      accessibilityLabel="Pull to refresh"
+      accessibilityState={{ busy: refreshing }}
       refreshing={refreshing}
       onRefresh={onRefresh}
-      tintColor="#3737A4" // Primary Brand Blue
-      colors={["#3737A4"]} // Android implementation
+      tintColor="#3737A4"
+      colors={["#3737A4"]}
       {...props}
     />
   );

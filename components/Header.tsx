@@ -4,15 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Coin from "./icons/Coin";
 import { useIsMounted } from "@/hooks/useIsMounted";
-import { useFreighterWallet } from "@/hooks/useFreighterWallet";
-import { WalletModal } from "./WalletModal";
+import { useWallet } from "@/lib/context/WalletContext";
+import { WalletBottomSheet } from "./WalletBottomSheet";
 import { Copy, LogOut, Check } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Header({ balance = "0" }: { balance?: string }) {
   const mounted = useIsMounted();
   const { connected, displayKey, publicKey, connect, disconnect, walletProvider } =
-    useFreighterWallet();
+    useWallet();
   const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -152,7 +152,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
         )}
       </header>
 
-      <WalletModal
+      <WalletBottomSheet
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onConnect={(provider) => connect(provider)}

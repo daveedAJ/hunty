@@ -26,6 +26,8 @@ export interface StoredHunt {
   is_private?: boolean
   /** Optional game cover CID/URL for hunt cards and sharing previews. */
   coverImageCid?: string
+  /** Active editorial banner showcase at the top of the Arcade. */
+  isFeaturedOfWeek?: boolean
 }
 
 export type HuntInfo = {
@@ -48,6 +50,12 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+  /** Center latitude for the clue's answer geofence. */
+  latitude?: number
+  /** Center longitude for the clue's answer geofence. */
+  longitude?: number
+  /** Allowed distance from the clue center in metres. Defaults to 100m. */
+  geofenceRadiusMeters?: number
 }
 
 export type ClueInfo = {
@@ -85,6 +93,11 @@ export type ActivateHuntResult = {
 
 export type AddClueResult = {
   txHash: string
+}
+
+export type ExtendHuntResult = {
+  txHash: string
+  newEndTime: number
 }
 
 // ─── Leaderboard ─────────────────────────────────────────────────────────────
@@ -180,6 +193,15 @@ export interface HuntCard {
   hint?: string
   hintCost?: number
   points?: number
+}
+
+export interface HuntDraft {
+  id: number
+  title: string
+  description: string
+  link: string
+  code: string
+  image?: string
 }
 
 // ─── Profile Dashboard Types ───────────────────────────────────────────────────

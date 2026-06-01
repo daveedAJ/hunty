@@ -1,16 +1,10 @@
-import { FlatList, View, Text } from "react-native";
-import { useQuery } from "@tanstack/react-query";
-import { HuntyRefreshControl } from "@/components/HuntyRefreshControl";
-import { useRefreshByUser } from "@/hooks/useRefreshByUser";
-import type { StoredHunt } from "@lib/types";
-
-const fetchHunts = async (): Promise<StoredHunt[]> => [];
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { HuntyRefreshControl } from '@components/HuntyRefreshControl';
 import { ThemedCustomText, ThemedView } from '@components/themed';
+import { EmptyState } from '@components/EmptyState';
 import { useRefreshByUser } from '@hooks/useRefreshByUser';
 import { useTheme } from '@providers/ThemeProvider';
 import { getActiveHuntsForFeed } from '@store/huntStore';
@@ -28,7 +22,11 @@ function scoreHunt(hunt: StoredHunt) {
 
 function estimatedPrize(hunt: StoredHunt) {
   const xlmPool = Math.max(12, hunt.cluesCount * 4);
-  const nftCount = hunt.rewardType === 'NFT' || hunt.rewardType === 'Both' ? Math.max(1, Math.floor(hunt.cluesCount / 3)) : 0;
+  const nftCount =
+    hunt.rewardType === 'NFT' || hunt.rewardType === 'Both'
+      ? Math.max(1, Math.floor(hunt.cluesCount / 3))
+      : 0;
+
   return { xlmPool, nftCount };
 }
 
@@ -36,81 +34,70 @@ export default function HomeFeed() {
   const router = useRouter();
   const { colors } = useTheme();
   const { data: hunts, refetch } = useQuery({
-    queryKey: ["hunts"],
     queryKey: ['feed-hunts'],
     queryFn: fetchHunts,
   });
-
   const { isRefreshing, onRefresh } = useRefreshByUser(refetch);
 
   const sections = useMemo(() => {
     const active = hunts ?? [];
-    const trending = [...active].sort((a, b) => scoreHunt(b) - scoreHunt(a)).slice(0, 4);
-    const newest = [...active]
-      .sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0))
-      .slice(0, 4);
-    const highestPrize = [...active]
-      .sort((a, b) => estimatedPrize(b).xlmPool - estimatedPrize(a).xlmPool)
-      .slice(0, 4);
     return [
-      { key: 'trending', title: 'Trending Hunts', subtitle: 'Most active around the map', data: trending },
-      { key: 'new', title: 'Newly Created', subtitle: 'Fresh hunts launched recently', data: newest },
-      { key: 'prize', title: 'Highest Prize', subtitle: 'Top XLM reward pools', data: highestPrize },
+      {
+        key: 'trending',
+        title: 'Trending Hunts',
+        subtitle: 'Most active around the map',
+        data: [...active].sort((a, b) => scoreHunt(b) - scoreHunt(a)).slice(0, 4),
+      },
+      {
+        key: 'new',
+        title: 'Newly Created',
+        subtitle: 'Fresh hunts launched recently',
+        data: [...active].sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0)).slice(0, 4),
+      },
+      {
+        key: 'prize',
+        title: 'Highest Prize',
+        subtitle: 'Top XLM reward pools',
+        data: [...active]
+          .sort((a, b) => estimatedPrize(b).xlmPool - estimatedPrize(a).xlmPool)
+          .slice(0, 4),
+      },
     ];
   }, [hunts]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <FlatList
-        data={hunts}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <View
-            style={{
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: "#f1f5f9",
-            }}
-          >
-            <Text style={{ color: "#0f172a", fontWeight: "600" }}>
-              {item.title}
-            </Text>
-          </View>
-        )}
-    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <HuntyRefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-          />
-        }
-        ListEmptyComponent={
-          <Text style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
-            No active hunts found.
-          </Text>
-        }
-      />
-    </View>
-  );
-}
+        refreshControl={<HuntyRefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
       >
-        <ThemedCustomText variant="h2" weight="800" style={styles.headerTitle}>Home Feed</ThemedCustomText>
+        <ThemedCustomText variant="h2" weight="800" style={styles.headerTitle}>
+          Home Feed
+        </ThemedCustomText>
         <ThemedCustomText variant="body" style={styles.headerSubtitle}>
           Explore active Soroban hunts by momentum, freshness, and reward size.
         </ThemedCustomText>
 
         {sections.map((section) => (
           <View key={section.key} style={styles.section}>
-            <ThemedCustomText variant="h3" weight="700">{section.title}</ThemedCustomText>
-            <ThemedCustomText variant="caption" style={styles.sectionSubtitle}>{section.subtitle}</ThemedCustomText>
+            <ThemedCustomText variant="h3" weight="700">
+              {section.title}
+            </ThemedCustomText>
+            <ThemedCustomText variant="caption" style={styles.sectionSubtitle}>
+              {section.subtitle}
+            </ThemedCustomText>
 
             {section.data.length === 0 ? (
-              <View style={[styles.emptyCard, { borderColor: colors.border }]}> 
-                <ThemedCustomText variant="body">No active hunts found.</ThemedCustomText>
-              </View>
+              <EmptyState
+                icon="🗺️"
+                title="No active hunts found"
+                description="There are currently no hunts available in this category. Check back later or explore other sections."
+                action={{
+                  label: 'Browse Hunts',
+                  onPress: () => router.push('/(tabs)/hunts'),
+                }}
+              />
             ) : (
               section.data.map((hunt) => {
                 const prize = estimatedPrize(hunt);
@@ -124,9 +111,13 @@ export default function HomeFeed() {
                       <ThemedCustomText variant="label" weight="700" style={styles.cardTitle} numberOfLines={1}>
                         {hunt.title}
                       </ThemedCustomText>
-                      <ThemedCustomText variant="caption" color="primary" weight="700">{hunt.rewardType}</ThemedCustomText>
+                      <ThemedCustomText variant="caption" color="primary" weight="700">
+                        {hunt.rewardType}
+                      </ThemedCustomText>
                     </View>
-                    <ThemedCustomText variant="caption" numberOfLines={2}>{hunt.description}</ThemedCustomText>
+                    <ThemedCustomText variant="caption" numberOfLines={2}>
+                      {hunt.description}
+                    </ThemedCustomText>
                     <View style={styles.metricsRow}>
                       <ThemedCustomText variant="caption">{hunt.cluesCount} clues</ThemedCustomText>
                       <ThemedCustomText variant="caption">{prize.xlmPool} XLM</ThemedCustomText>
@@ -144,54 +135,20 @@ export default function HomeFeed() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   content: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 28,
     gap: 12,
   },
-  headerTitle: {
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    opacity: 0.75,
-    marginBottom: 4,
-  },
-  section: {
-    marginTop: 10,
-  },
-  sectionSubtitle: {
-    marginTop: 2,
-    marginBottom: 8,
-    opacity: 0.8,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    gap: 6,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardTitle: {
-    flex: 1,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  emptyCard: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 16,
-  },
+  headerTitle: { marginBottom: 2 },
+  headerSubtitle: { opacity: 0.75, marginBottom: 4 },
+  section: { marginTop: 10 },
+  sectionSubtitle: { marginTop: 2, marginBottom: 8, opacity: 0.8 },
+  card: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8, gap: 6 },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  cardTitle: { flex: 1 },
+  metricsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  emptyCard: { borderWidth: 1, borderRadius: 10, padding: 16 },
 });

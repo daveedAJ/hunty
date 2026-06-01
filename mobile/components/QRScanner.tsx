@@ -1,7 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 
 interface QRScannerProps {
   isOpen: boolean;
@@ -22,8 +29,30 @@ export const QRScanner: React.FC<QRScannerProps> = ({
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [torchOn, setTorchOn] = useState(false);
   const cameraRef = useRef<CameraView>(null);
-  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const scanLineY = useSharedValue(0);
+
+  useEffect(() => {
+    scanLineY.value = 0;
+    scanLineY.value = withRepeat(
+      withTiming(SCAN_AREA_SIZE - 4, {
+        duration: 2500,
+        easing: Easing.linear,
+      }),
+      -1,
+      true
+    );
+    return () => {
+      scanLineY.value = 0;
+    };
+  }, [isOpen, scanLineY]);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLineY.value }],
+  }));
 
   useEffect(() => {
     if (isOpen && !permission?.granted) {
@@ -44,7 +73,6 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     if (!scanned) {
       setScanned(true);
       onScan(data);
-      // Auto-close after a short delay to show the scan was successful
       setTimeout(onClose, 800);
     }
   };
@@ -53,22 +81,33 @@ export const QRScanner: React.FC<QRScannerProps> = ({
 
   if (!permission) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        accessible={true}
+        accessibilityLabel="Camera permission required"
+        style={styles.container}
+      >
         <View style={styles.centerContent}>
-          <Text style={[styles.permissionText, { color: colors.text }]}>
+          <Text style={styles.permissionText}>
             Camera permission is required
           </Text>
           <TouchableOpacity
-            style={[styles.permissionButton, { backgroundColor: colors.primary }]}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Grant camera permission"
+            accessibilityHint="Opens system permission dialog for camera access"
+            style={styles.permissionButton}
             onPress={() => requestPermission()}
           >
             <Text style={styles.buttonText}>Grant Permission</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Close scanner"
             style={styles.closeButton}
             onPress={onClose}
           >
-            <Text style={[styles.closeButtonText, { color: colors.text }]}>×</Text>
+            <Text style={styles.closeButtonText}>×</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -77,22 +116,33 @@ export const QRScanner: React.FC<QRScannerProps> = ({
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        accessible={true}
+        accessibilityLabel="Camera access denied"
+        style={styles.container}
+      >
         <View style={styles.centerContent}>
-          <Text style={[styles.permissionText, { color: colors.text }]}>
+          <Text style={styles.permissionText}>
             Camera access denied
           </Text>
           <TouchableOpacity
-            style={[styles.permissionButton, { backgroundColor: colors.primary }]}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Enable camera access"
+            accessibilityHint="Requests camera permission again"
+            style={styles.permissionButton}
             onPress={() => requestPermission()}
           >
             <Text style={styles.buttonText}>Enable Camera</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Close scanner"
             style={styles.closeButton}
             onPress={onClose}
           >
-            <Text style={[styles.closeButtonText, { color: colors.text }]}>×</Text>
+            <Text style={[styles.closeButtonText, { color: 'white' }]}>×</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -100,9 +150,9 @@ export const QRScanner: React.FC<QRScannerProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View accessible={true} accessibilityLabel="QR code scanner active" style={styles.container}>
       {isInitializing && <ActivityIndicator size="large" color="#3737A4" style={styles.loadingIndicator} />}
-      
+
       <CameraView
         ref={cameraRef}
         style={[styles.camera, { opacity: isInitializing ? 0.1 : 1 }]}
@@ -110,38 +160,38 @@ export const QRScanner: React.FC<QRScannerProps> = ({
         barcodeScannerSettings={{
           barcodeTypes: ['qr'],
         }}
+        torch={torchOn ? 'on' : 'off'}
       />
 
-      {/* Overlay */}
       <View style={styles.overlay}>
-        {/* Top section */}
         <View style={[styles.overlaySection, { height: (height - SCAN_AREA_SIZE) / 2 }]} />
 
-        {/* Middle section with scan area */}
         <View style={styles.middleSection}>
-          {/* Left */}
           <View style={[styles.overlaySide, { width: (width - SCAN_AREA_SIZE) / 2 }]} />
 
-          {/* Scan area frame */}
           <View style={styles.scanAreaContainer}>
             <View style={[styles.corner, styles.cornerTopLeft]} />
             <View style={[styles.corner, styles.cornerTopRight]} />
             <View style={[styles.corner, styles.cornerBottomLeft]} />
             <View style={[styles.corner, styles.cornerBottomRight]} />
+            <Animated.View style={[styles.scanLine, scanLineStyle]} />
           </View>
 
-          {/* Right */}
           <View style={[styles.overlaySide, { width: (width - SCAN_AREA_SIZE) / 2 }]} />
         </View>
 
-        {/* Bottom section */}
         <View style={[styles.overlaySection, { height: (height - SCAN_AREA_SIZE) / 2 }]} />
       </View>
 
-      {/* Top header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{title}</Text>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <Text accessible={true} accessibilityRole="header" style={styles.headerTitle}>
+          {title}
+        </Text>
         <TouchableOpacity
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Close scanner"
+          accessibilityHint="Returns to previous screen"
           style={styles.headerCloseButton}
           onPress={onClose}
         >
@@ -149,9 +199,27 @@ export const QRScanner: React.FC<QRScannerProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Bottom hint */}
+      <View style={styles.flashContainer}>
+        <TouchableOpacity
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={torchOn ? 'Turn off flash' : 'Turn on flash'}
+          accessibilityHint="Toggles camera flash for scanning in low light"
+          style={[styles.flashButton, torchOn && styles.flashButtonActive]}
+          onPress={() => setTorchOn((prev) => !prev)}
+        >
+          <Text style={[styles.flashIcon, torchOn && styles.flashIconActive]}>
+            {torchOn ? '⚡' : '🔦'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.hintContainer}>
-        <Text style={styles.hintText}>
+        <Text
+          accessible={true}
+          accessibilityLiveRegion="polite"
+          style={styles.hintText}
+        >
           {scanned ? 'QR Code detected!' : 'Position the QR code within the frame'}
         </Text>
       </View>
@@ -196,6 +264,7 @@ const styles = StyleSheet.create({
     width: SCAN_AREA_SIZE,
     height: SCAN_AREA_SIZE,
     borderColor: 'transparent',
+    overflow: 'hidden',
   },
   corner: {
     position: 'absolute',
@@ -228,6 +297,21 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
+  scanLine: {
+    position: 'absolute',
+    top: 0,
+    left: 4,
+    right: 4,
+    height: 4,
+    backgroundColor: '#3737A4',
+    borderRadius: 2,
+    opacity: 0.9,
+    shadowColor: '#3737A4',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -237,7 +321,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 8,
     zIndex: 100,
   },
@@ -250,6 +333,29 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 50,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  flashContainer: {
+    position: 'absolute',
+    top: 100,
+    right: 16,
+    zIndex: 100,
+  },
+  flashButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flashButtonActive: {
+    backgroundColor: 'rgba(55, 55, 164, 0.7)',
+  },
+  flashIcon: {
+    fontSize: 22,
+  },
+  flashIconActive: {
+    fontSize: 24,
   },
   hintContainer: {
     position: 'absolute',
@@ -278,12 +384,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 24,
     textAlign: 'center',
+    color: 'white',
   },
   permissionButton: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
     marginBottom: 16,
+    backgroundColor: '#3b82f6',
   },
   buttonText: {
     color: 'white',
@@ -303,6 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 24,
+    color: 'white',
   },
   headerCloseText: {
     color: 'white',

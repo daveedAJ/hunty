@@ -1,6 +1,6 @@
 import { getAddress, signTransaction as freighterSignTransaction } from "@stellar/freighter-api"
 
-export type WalletProvider = "freighter" | "albedo" | "rabet"
+export type WalletProvider = "freighter" | "albedo" | "rabet" | "xbull" | "lobstr"
 
 const WALLET_SESSION_KEY = "stellar_wallet_session"
 
@@ -28,12 +28,18 @@ type AlbedoLike = {
   signTransaction?: (xdr: string) => Promise<string>
 }
 
+type XBullLike = {
+  getPublicKey: () => Promise<string>
+  signTransaction: (xdr: string, opts?: { network: string }) => Promise<string>
+}
+
 type BrowserWithWallets = Window & {
   freighter?: unknown
   rabet?: unknown
   albedo?: unknown
   soroban?: unknown
   sorobanWallet?: unknown
+  xBullWallet?: XBullLike
 }
 
 export type ActiveWalletAdapter = {
@@ -48,7 +54,11 @@ function parseSession(value: string | null): WalletSession | null {
     const parsed = JSON.parse(value) as WalletSession
     if (
       parsed &&
-      (parsed.provider === "freighter" || parsed.provider === "albedo" || parsed.provider === "rabet") &&
+      (parsed.provider === "freighter" ||
+        parsed.provider === "albedo" ||
+        parsed.provider === "rabet" ||
+        parsed.provider === "xbull" ||
+        parsed.provider === "lobstr") &&
       typeof parsed.publicKey === "string"
     ) {
       return parsed
@@ -130,11 +140,29 @@ async function signWithAlbedo(win: BrowserWithWallets, xdr: string): Promise<str
   return signed
 }
 
+async function getXBullPublicKey(win: BrowserWithWallets): Promise<string> {
+  const wallet = win.xBullWallet
+  if (!wallet) throw new Error("xBull Wallet not found. Please install the extension or app.")
+  return wallet.getPublicKey()
+}
+
+async function signWithXBull(win: BrowserWithWallets, xdr: string): Promise<string> {
+  const wallet = win.xBullWallet
+  if (!wallet) throw new Error("xBull Wallet not found.")
+  return wallet.signTransaction(xdr, { network: "TESTNET" })
+}
+
 export async function connectWalletProvider(provider: WalletProvider): Promise<string> {
   if (typeof window === "undefined") throw new Error("Browser environment required")
   const win = window as BrowserWithWallets
   if (provider === "freighter") return getFreighterPublicKey()
   if (provider === "rabet") return getRabetPublicKey(win)
+  if (provider === "xbull") return getXBullPublicKey(win)
+  if (provider === "lobstr") {
+    // For Lobstr on mobile, we often just redirect or usage with deep links.
+    // For now, we'll suggest a placeholder or use a generic approach if possible.
+    throw new Error("Lobstr integration via this adapter is currently mobile-only.")
+  }
   return getAlbedoPublicKey(win)
 }
 
@@ -156,6 +184,14 @@ export function getActiveWalletAdapter(): ActiveWalletAdapter {
       provider,
       getPublicKey: () => getAlbedoPublicKey(win),
       signTransaction: (xdr) => signWithAlbedo(win, xdr),
+    }
+  }
+
+  if (provider === "xbull") {
+    return {
+      provider,
+      getPublicKey: () => getXBullPublicKey(win),
+      signTransaction: (xdr) => signWithXBull(win, xdr),
     }
   }
 

@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '@providers/ThemeProvider';
-import { useTheme } from '../../providers/ThemeProvider';
 import { ThemedCustomText } from './ThemedCustomText';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
@@ -22,6 +21,7 @@ interface ThemedButtonProps extends PressableProps {
   disabled?: boolean;
   fullWidth?: boolean;
   icon?: React.ReactNode;
+  accessibilityHint?: string;
 }
 
 const variantStyles = {
@@ -78,6 +78,8 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   icon,
   onPress,
   style,
+  accessibilityLabel,
+  accessibilityHint,
   ...otherProps
 }) => {
   const [pressed, setPressed] = useState(false);
@@ -104,6 +106,11 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
 
   return (
     <Pressable
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? text}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       onPress={(e) => {
         if (!disabled && !loading && onPress) {
           onPress(e);

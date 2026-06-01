@@ -23,6 +23,7 @@ export type StellarErrorCode =
   | "CONTRACT_CLUE_ALREADY_ANSWERED"
   | "CONTRACT_HUNT_NOT_ACTIVE"
   | "CONTRACT_HUNT_EXPIRED"
+  | "INSUFFICIENT_FEE"
   | "UNKNOWN"
 
 export interface StellarError {
@@ -50,6 +51,10 @@ const WALLET_REJECTION_PATTERNS: RegExp[] = [
  * https://developers.stellar.org/docs/learn/encyclopedia/errors-result-codes
  */
 const TX_CODE_MAP: Record<string, { code: StellarErrorCode; message: string }> = {
+  tx_insufficient_fee: {
+    code: "INSUFFICIENT_FEE",
+    message: "Insufficient fee supplied for transaction. Increase the fee or add more XLM to your account.",
+  },
   tx_insufficient_balance: {
     code: "INSUFFICIENT_BALANCE",
     message: "Insufficient XLM balance to cover transaction fees. Top up your account and try again.",

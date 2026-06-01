@@ -40,6 +40,11 @@ export const ClueList: React.FC<ClueListProps> = ({
 
     return (
       <TouchableOpacity
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`Clue ${index + 1}: ${item.title}, ${item.points} points${isSolved ? ', solved' : ''}`}
+        accessibilityHint={isActive ? 'Currently selected clue' : 'Tap to select this clue'}
+        accessibilityState={{ selected: isActive, disabled: false }}
         onPress={() => onSelectClue(index)}
         activeOpacity={0.7}
         style={[
@@ -90,7 +95,7 @@ export const ClueList: React.FC<ClueListProps> = ({
         </View>
 
         {isSolved && (
-          <View style={styles.solvedBadge}>
+          <View accessible={true} accessibilityLabel="Solved" style={styles.solvedBadge}>
             <Text style={styles.solvedText}>✓</Text>
           </View>
         )}
@@ -110,6 +115,10 @@ export const ClueList: React.FC<ClueListProps> = ({
         </ThemedCustomText>
 
         <TouchableOpacity
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Scan QR code"
+          accessibilityHint="Opens the QR code scanner to solve a clue"
           onPress={onOpenScanner}
           activeOpacity={0.8}
           style={styles.scanButton}

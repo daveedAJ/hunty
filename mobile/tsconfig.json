@@ -10,7 +10,6 @@
       "@store/*": ["./store/*"],
       "@providers/*": ["./providers/*"],
       "@components/*": ["./components/*"],
-      "@services/*": ["./services/*"]
       "@services/*": ["./services/*"],
       "@hooks/*": ["./hooks/*"],
       "@utils/*": ["./utils/*"],

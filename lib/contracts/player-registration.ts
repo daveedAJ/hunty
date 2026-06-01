@@ -283,9 +283,11 @@ export async function getPlayerProgress(
       if (typeof window !== "undefined") {
         const userPointsKey = `hunt_${huntId}_my_points`;
         const hasPoints = localStorage.getItem(userPointsKey) !== null;
+        const registeredKey = `hunt_registered_${huntId}_${playerAddress}`;
+        const isRegistered = localStorage.getItem(registeredKey) === "true";
         
-        if (hasPoints) {
-          // If the player has points, they are registered
+        if (hasPoints || isRegistered) {
+          // If the player has points or is registered, they are registered
           const isCompleted = localStorage.getItem(`hunt_completed_${huntId}`) === "true";
           const isClaimed = localStorage.getItem(`hunt_reward_claimed_${huntId}`) === "true";
           
@@ -531,6 +533,11 @@ export async function registerPlayer(
         )
       }
 
+      // Set localStorage key for registration (for mock mode)
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`hunt_registered_${huntId}_${playerAddress}`, "true");
+      }
+      
       // Clear cache after successful registration
       clearRegistrationCache(huntId, playerAddress)
 
