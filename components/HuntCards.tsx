@@ -11,6 +11,7 @@ import sanitizeHtml from "@/lib/sanitizeHtml";
 import { submitAnswer, AnswerIncorrectError, pollTransaction } from "@/lib/contracts/hunt";
 import { resolveImageSrc, GATEWAY_COUNT } from "@/lib/ipfs";
 import type { HuntCard as Hunt } from "@/lib/types";
+import { usePlayerCount } from "@/hooks/usePlayerCount";
 
 export type { Hunt };
 
@@ -32,6 +33,15 @@ interface HuntCardsProps {
   solved?: boolean;
   /** Whether the hunt has ended. */
   huntEnded?: boolean;
+  /**
+   * Pre-fetched player count from the arcade page (via usePlayerCounts).
+   * When omitted, the component fetches its own count via usePlayerCount.
+   * Passing from the parent avoids N individual fetches when many cards render.
+   */
+  playerCount?: number;
+  playerCountLoading?: boolean;
+  playerCountError?: string | null;
+  isTrending?: boolean;
 }
 
 const DEFAULT_POINTS = 10;
@@ -49,8 +59,23 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   points,
   solved = false,
   huntEnded = false,
+  playerCount: playerCountProp,
+  playerCountLoading: playerCountLoadingProp,
+  playerCountError: playerCountErrorProp,
+  isTrending: isTrendingProp,
 }) => {
   const hunt = hunts && hunts.length > 0 ? hunts[0] : {} as Hunt;
+
+  // If the parent pre-fetched counts (arcade page), use those.
+  // Otherwise fall back to the per-card hook (play flow).
+  // Using String(huntId ?? hunt.id) as the key — both are numeric IDs.
+  const fallbackId = String(huntId ?? hunt.id ?? "");
+  const ownCount = usePlayerCount(playerCountProp !== undefined ? "" : fallbackId);
+
+  const count = playerCountProp !== undefined ? playerCountProp : ownCount.count;
+  const countIsLoading = playerCountProp !== undefined ? (playerCountLoadingProp ?? false) : ownCount.isLoading;
+  const countError = playerCountProp !== undefined ? (playerCountErrorProp ?? null) : ownCount.error;
+  const trending = playerCountProp !== undefined ? (isTrendingProp ?? false) : ownCount.isTrending;
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -201,8 +226,29 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
           {points != null && (
             <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-semibold print:bg-transparent print:border print:border-gray-300 print:text-black">{points} pts</span>
           )}
-          <span className="text-[#B3B3E5] ml-auto print:text-black text-xs sm:text-sm">{currentIndex}/{totalHunts}</span>
+          <div className="ml-auto flex items-center gap-2">
+            {trending && (
+              <span
+                className="trending-badge bg-orange-500/80 text-white px-2 py-0.5 rounded-full text-xs font-semibold print:hidden"
+                aria-label="Trending hunt"
+              >
+                🔥 Trending
+              </span>
+            )}
+            <span className="text-[#B3B3E5] print:text-black text-xs sm:text-sm">{currentIndex}/{totalHunts}</span>
+          </div>
         </div>
+        {/* Player count — shown below the title row, above description */}
+        <span
+          className="player-count block text-xs text-white/60 mb-2 print:hidden"
+          aria-label={countIsLoading ? "Loading player count" : countError ? undefined : `${count} player${count !== 1 ? "s" : ""} registered`}
+        >
+          {countIsLoading ? (
+            <span className="player-count--loading" aria-hidden="true">—</span>
+          ) : countError ? null : (
+            `${count} player${count !== 1 ? "s" : ""} registered`
+          )}
+        </span>
         <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 line-clamp-2 print:text-3xl print:mb-4">
           {hunt.title || "Untitled Hunt"}
         </h3>
