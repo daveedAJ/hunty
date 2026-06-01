@@ -113,6 +113,24 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
     checkStatus();
   }, [hunt.id, connectedPublicKey, walletCheckComplete]);
 
+  // Track anonymous hunt page views for creator engagement analytics.
+  useEffect(() => {
+    void (async () => {
+      try {
+        await fetch("/api/analytics/hunt-view", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ huntId: hunt.id }),
+          keepalive: true,
+        })
+      } catch (error) {
+        console.warn("Hunt view analytics request failed", error)
+      }
+    })()
+  }, [hunt.id])
+
   // Handle player registration (Requirements 1.3, 1.4, 1.5)
   const handleRegister = async () => {
     if (!connectedPublicKey) {

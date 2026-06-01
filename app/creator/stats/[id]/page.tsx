@@ -17,11 +17,15 @@ export default function CreatorStatsPage() {
   const router = useRouter()
   const huntId = typeof params.id === "string" ? parseInt(params.id, 10) : NaN
   const [title, setTitle] = useState<string>("")
+<<<<<<< HEAD
+  const [viewCount, setViewCount] = useState<number | null>(null)
+=======
   const [endTime, setEndTime] = useState<number | undefined>()
   const [status, setStatus] = useState<string>("")
   const [isExtending, setIsExtending] = useState(false)
   const [extendHours, setExtendHours] = useState<string>("1")
   const { connected } = useWallet()
+>>>>>>> 0bdfe90f97535e4117df95a95d7d43ba3189abc8
 
   const loadHunt = useCallback(() => {
     if (Number.isNaN(huntId)) return
@@ -33,6 +37,21 @@ export default function CreatorStatsPage() {
     } else {
       setTitle("Unknown Hunt")
     }
+  }, [huntId])
+
+  useEffect(() => {
+    if (Number.isNaN(huntId)) return
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/analytics/hunt-view?huntId=${huntId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setViewCount(typeof data.views === "number" ? data.views : 0)
+      } catch {
+        setViewCount(null)
+      }
+    })()
   }, [huntId])
 
   useEffect(() => {
@@ -188,7 +207,7 @@ export default function CreatorStatsPage() {
             <p className="text-slate-600">
               Live stats (players, completions, leaderboard) will be wired to the contract or indexer here.
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-medium uppercase text-slate-500">Players</p>
                 <p className="text-2xl font-bold text-slate-800">—</p>
@@ -196,6 +215,12 @@ export default function CreatorStatsPage() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-medium uppercase text-slate-500">Completions</p>
                 <p className="text-2xl font-bold text-slate-800">—</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase text-slate-500">Hunt Views</p>
+                <p className="text-2xl font-bold text-slate-800">
+                  {viewCount !== null ? viewCount : "—"}
+                </p>
               </div>
             </div>
             <Button asChild variant="outline">
