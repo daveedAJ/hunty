@@ -94,8 +94,9 @@ async function getFreighterPublicKey(): Promise<string> {
 
 async function signWithFreighter(xdr: string): Promise<string> {
   const signedXdr = await freighterSignTransaction(xdr)
-  if (!signedXdr) throw new Error("Freighter cannot sign transaction")
-  return signedXdr
+  if (signedXdr.error) throw new Error(String(signedXdr.error))
+  if (!signedXdr.signedTxXdr) throw new Error("Freighter cannot sign transaction")
+  return signedXdr.signedTxXdr
 }
 
 async function getRabetPublicKey(win: BrowserWithWallets): Promise<string> {

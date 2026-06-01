@@ -104,16 +104,28 @@ export function FeaturedHunts() {
                   )}
                 </div>
 
-                <Button
-                  size="sm"
-                  className="w-full bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold"
-                  onClick={() => {
-                    window.location.href = `/hunt/${hunt.id}`
-                  }}
-                >
-                  Play Now
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
+                <div className="flex gap-2 mt-auto">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold"
+                    onClick={() => {
+                      window.location.href = `/hunt/${hunt.id}`
+                    }}
+                  >
+                    Play Now
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4]/10 rounded-xl font-semibold dark:border-blue-500 dark:text-blue-400"
+                    onClick={() => {
+                      window.location.href = `/hunt/${hunt.id}/leaderboard`
+                    }}
+                  >
+                    Watch Live
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

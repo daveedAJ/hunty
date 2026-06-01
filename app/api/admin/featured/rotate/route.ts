@@ -13,7 +13,7 @@ function readFeaturedId(): number | null {
     const raw = fs.readFileSync(FILE_PATH, "utf8")
     const parsed = JSON.parse(raw) as { featuredHuntId: number | null }
     return parsed.featuredHuntId ?? null
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -25,7 +25,7 @@ function writeFeaturedId(id: number | null): void {
       fs.mkdirSync(dir, { recursive: true })
     }
     fs.writeFileSync(FILE_PATH, JSON.stringify({ featuredHuntId: id }, null, 2), "utf8")
-  } catch (error) {
+  } catch {
     // ignore
   }
 }
@@ -56,7 +56,7 @@ export async function POST() {
       rotatedTo: nextHunt.id,
       hunt: nextHunt
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to rotate featured hunt" }, { status: 500 })
   }
 }

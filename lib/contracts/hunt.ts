@@ -269,18 +269,27 @@ export async function get_hunt_fastest_players(huntId: number): Promise<FastestP
 
         if (rows.length > 0) {
           return rows
-            .map((entry) => ({
-              address: entry.address,
-              name: entry.name,
-              points: typeof entry.points === "number" ? entry.points : undefined,
-              completionTimeSeconds:
-                typeof entry.completion_time_seconds === "number"
-                  ? entry.completion_time_seconds
-                  : typeof entry.duration_seconds === "number"
-                  ? entry.duration_seconds
-                  : Math.floor((Number(entry.completion_time_ms ?? entry.duration_ms ?? 0) / 1000) || 0),
-            }))
-            .filter((entry) => entry.address && entry.completionTimeSeconds >= 0)
+            .map((entry): FastestPlayerEntry | null => {
+              if (typeof entry.address !== "string") {
+                return null
+              }
+
+              return {
+                address: entry.address,
+                name: entry.name,
+                points: typeof entry.points === "number" ? entry.points : undefined,
+                completionTimeSeconds:
+                  typeof entry.completion_time_seconds === "number"
+                    ? entry.completion_time_seconds
+                    : typeof entry.duration_seconds === "number"
+                    ? entry.duration_seconds
+                    : Math.floor((Number(entry.completion_time_ms ?? entry.duration_ms ?? 0) / 1000) || 0),
+              }
+            })
+            .filter(
+              (entry): entry is FastestPlayerEntry =>
+                entry !== null && typeof entry.address === "string" && entry.completionTimeSeconds >= 0
+            )
         }
       }
     } catch (error) {
@@ -368,7 +377,7 @@ export async function pollTransaction(txHash: string): Promise<boolean> {
   }
 
   const server = new Server(SOROBAN_RPC_URL);
-  const maybeServer = server as Server & {
+  const maybeServer = server as typeof server & {
     getTransaction?: (hash: string) => Promise<{ status: string }>
   }
   

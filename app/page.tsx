@@ -440,18 +440,26 @@ export default function GameArcade() {
                           {hunt.rewardType} Reward
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mt-2 w-full justify-between">
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold h-8 text-[11px] px-3"
+                          onClick={() => {
+                            window.location.href = `/hunt/${hunt.id}`
+                          }}
+                        >
+                          Play
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-[#3737A4] hover:bg-slate-100 flex items-center gap-1.5 h-8 text-[11px] font-semibold"
+                          className="text-[#3737A4] hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 h-8 text-[11px] font-semibold dark:text-blue-400"
                           onClick={() => {
-                            // Link to the leaderboard tab in the arcade/hunty page
-                            window.location.href = `/hunty?huntId=${hunt.id}&tab=leaderboard`
+                            window.location.href = `/hunt/${hunt.id}/leaderboard`
                           }}
                         >
                           <Trophy className="w-3.5 h-3.5" />
-                          Leaderboard
+                          Watch Live
                         </Button>
                       </div>
                     </div>

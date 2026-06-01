@@ -32,7 +32,7 @@ export default function AdminPage() {
   const [filter, setFilter] = useState<"all" | "Active" | "Completed" | "Draft">("all")
 
   // Fetch featured hunt ID from server API
-  const { data: featuredData, refetch: refetchFeatured, isLoading: isLoadingFeatured } = useQuery({
+  const { data: featuredData, refetch: refetchFeatured } = useQuery({
     queryKey: ["featuredHuntId"],
     queryFn: async () => {
       const res = await fetch("/api/admin/featured")

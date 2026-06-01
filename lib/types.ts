@@ -3,7 +3,7 @@
  * All shared interfaces and types live here — import from "@/lib/types".
  */
 
-type ReactNode = unknown
+import type { ReactNode } from "react"
 
 // ─── Hunt ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +16,12 @@ export interface StoredHunt {
   cluesCount: number
   status: HuntStatus
   rewardType: "XLM" | "NFT" | "Both"
+  /** Total reward pool value used for creator-side sorting. */
+  rewardPool?: number
+  /** Creator-side participant count snapshot for dashboard sorting. */
+  playerCount?: number
+  /** Unix timestamp in seconds when the hunt draft was created locally. */
+  createdAt?: number
   /** Unix timestamp in seconds — when the hunt starts. */
   startTime?: number
   /** Unix timestamp in seconds — when the hunt ends. */
@@ -36,6 +42,8 @@ export type HuntInfo = {
   description: string
   totalClues: number
   status: string
+  startTime?: number
+  endTime?: number
   creatorEmail?: string
   emailNotifications?: boolean
 }

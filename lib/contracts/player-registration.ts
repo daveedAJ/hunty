@@ -1,5 +1,5 @@
 import Server, { TransactionBuilder, Operation } from "@stellar/stellar-sdk"
-import { getSorobanNetworkPassphrase, getSorobanRpcUrl } from "../soroban/client"
+import { SOROBAN_RPC_URL, NETWORK_PASSPHRASE } from "./config"
 import { withSorobanRpcRetry } from "../soroban/rpcRetry"
 import { RegistrationError } from "@/lib/contracts/errors"
 
@@ -274,9 +274,8 @@ export async function getPlayerProgress(
 
   return withRetry(async () => {
     try {
-      const rpcUrl = getSorobanRpcUrl()
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const server = new Server(rpcUrl)
+      const server = new Server(SOROBAN_RPC_URL)
 
       // In a real implementation, this would query the contract's get_player_progress function
       // For now, we simulate the contract call using the manageData pattern
@@ -455,8 +454,7 @@ export async function registerPlayer(
     }
 
     return await withRetry(async () => {
-      const rpcUrl = getSorobanRpcUrl()
-      const server = new Server(rpcUrl)
+      const server = new Server(SOROBAN_RPC_URL)
       const wallet = getWallet()
       const publicKey = await getPublicKey(wallet)
 
@@ -499,7 +497,7 @@ export async function registerPlayer(
       // Build transaction
       const tx = new TransactionBuilder(account, {
         fee: "100",
-        networkPassphrase: getSorobanNetworkPassphrase(),
+        networkPassphrase: NETWORK_PASSPHRASE,
       })
         .addOperation(op)
         .setTimeout(180)

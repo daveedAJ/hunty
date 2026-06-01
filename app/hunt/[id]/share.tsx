@@ -2,7 +2,7 @@
 
 import { HuntControls } from "@/components/HuntControls";
 import { Button } from "@/components/ui/button";
-import { QrCode } from "lucide-react";
+import { QrCode, Trophy } from "lucide-react";
 import { QrCodeModal } from "@/components/QrCodeModal";
 import type { StoredHunt } from "@/lib/types";
 import { updateHuntStatus } from "@/lib/huntStore";
@@ -160,8 +160,18 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
             />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold text-base px-8 py-4 rounded-2xl">
-            Please connect your wallet to join this hunt
+          <div className="flex-1 flex flex-col sm:flex-row items-stretch gap-4 w-full">
+            <div className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold text-base px-8 py-4 rounded-2xl">
+              Please connect your wallet to join this hunt
+            </div>
+            <Button
+              variant="outline"
+              className="flex-1 border-[#3737A4] text-white hover:bg-[#3737A4]/20 py-4 h-auto font-semibold text-base rounded-2xl"
+              onClick={() => router.push(`/hunt/${hunt.id}/leaderboard`)}
+            >
+              <Trophy className="w-5 h-5 mr-2" />
+              Watch Live Leaderboard
+            </Button>
           </div>
         )}
 

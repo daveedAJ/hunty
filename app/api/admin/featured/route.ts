@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const { huntId } = await req.json() as { huntId: number | null }
     writeFeaturedId(huntId)
     return NextResponse.json({ success: true, featuredHuntId: huntId })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 })
   }
 }

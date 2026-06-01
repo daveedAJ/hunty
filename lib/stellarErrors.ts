@@ -33,6 +33,25 @@ export interface StellarError {
   raw: unknown
 }
 
+/** Shape of the RPC error payload we dig into (axios-style and fetch-style). */
+interface RpcErrorData {
+  extras?: {
+    result_codes?: {
+      transaction?: string
+      operations?: string[]
+    }
+  }
+  error?: unknown
+  detail?: unknown
+  message?: unknown
+}
+
+/** Structural view of a thrown error that may carry an RPC payload. */
+interface RpcErrorLike {
+  response?: { data?: RpcErrorData }
+  data?: RpcErrorData
+}
+
 // ---------------------------------------------------------------------------
 // Pattern tables
 // ---------------------------------------------------------------------------
@@ -154,9 +173,8 @@ export function parseStellarError(error: unknown): StellarError {
   }
 
   // 3. Dig into RPC response objects (axios-style and fetch-style)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anyErr = error as any
-  const data = anyErr?.response?.data ?? anyErr?.data
+  const errLike = error as RpcErrorLike
+  const data: RpcErrorData | undefined = errLike?.response?.data ?? errLike?.data
 
   if (data) {
     // 3a. Stellar result codes

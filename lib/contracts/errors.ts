@@ -145,6 +145,12 @@ export interface ContractErrorInfo {
   raw: unknown
 }
 
+/** Structural view of a thrown error that may carry an HTTP status. */
+interface HttpErrorLike {
+  response?: { status?: number }
+  status?: number
+}
+
 /**
  * Maps any thrown value from a contract interaction to a structured
  * `ContractErrorInfo` with a consistent, user-friendly `message`.
@@ -228,9 +234,8 @@ export function isNetworkError(error: unknown): boolean {
         ? error
         : ""
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anyErr = error as any
-  const status = anyErr?.response?.status ?? anyErr?.status
+  const errLike = error as HttpErrorLike
+  const status = errLike?.response?.status ?? errLike?.status
   if (status === 408 || status === 504) return true
 
   return NETWORK_ERROR_PATTERNS.some((p) => p.test(msg))

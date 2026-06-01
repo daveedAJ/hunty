@@ -73,6 +73,10 @@ export function PlayGame({
   });
 
   const error: string | null = queryError instanceof Error ? queryError.message : queryError ? "Failed to fetch clues" : null;
+  const fetchedClues = fetched?.clues ?? null;
+  const huntInfo = fetched?.huntInfo ?? null;
+  const hunts = huntId != null ? (fetchedClues ?? []) : (huntsProp ?? []);
+  const hasHunts = hunts.length > 0;
 
   useEffect(() => {
     setCurrentCardIndex(0);
@@ -97,11 +101,6 @@ export function PlayGame({
       }
     }
   }, [huntInfo?.endTime]);
-
-  const fetchedClues = fetched?.clues ?? null;
-  const huntInfo = fetched?.huntInfo ?? null;
-  const hunts = huntId != null ? (fetchedClues ?? []) : (huntsProp ?? []);
-  const hasHunts = hunts.length > 0;
 
   const handleScoreUpdate = (points: number) => {
     setScore((prev) => prev + points);
