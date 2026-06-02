@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useWindowVirtualizer } from "@tanstack/react-virtual"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { Footer } from "@/components/Footer"
 import { usePlayerCounts } from "@/hooks/usePlayerCounts"
 import { useRecentlyCompleted } from "@/hooks/useRecentlyCompleted"
 import { RecentlyCompletedSection } from "@/components/RecentlyCompletedSection"
+import type { PlayerCountResult } from "@/lib/types"
 
 interface WalletOption {
   id: string
@@ -34,6 +36,8 @@ interface WalletOption {
 const walletOptions: WalletOption[] = []
 
 const INACTIVE_PAGE_SIZE = 6
+const ACTIVE_GRID_GAP = 24
+const ACTIVE_CARD_ESTIMATED_HEIGHT = 360
 
 function sortByRecentFirst(a: StoredHunt, b: StoredHunt): number {
   const aSortTime = a.endTime ?? a.startTime ?? 0
@@ -51,6 +55,170 @@ function fetchInactiveHunts() {
 // Private hunts (is_private=true) are excluded from the public arcade.
 function fetchAllHunts() {
   return getAllHunts().filter((h) => (h.status === "Active" || h.status === "Completed") && !h.is_private)
+}
+
+function getActiveGridColumnCount(width: number): number {
+  if (width >= 1280) return 4
+  if (width >= 1024) return 3
+  if (width >= 640) return 2
+  return 1
+}
+
+function ActiveHuntCard({
+  hunt,
+  playerCount,
+}: {
+  hunt: StoredHunt
+  playerCount?: PlayerCountResult
+}) {
+  return (
+    <Card className="h-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+      <HuntCoverImage
+        src={hunt.coverImageCid}
+        alt={`${hunt.title} cover`}
+        className="relative w-full h-40 bg-slate-100"
+      />
+      <div className="p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <CardTitle className="text-lg font-semibold line-clamp-2 dark:text-slate-100 flex-1">
+            {hunt.title}
+          </CardTitle>
+          {playerCount?.isTrending && (
+            <span
+              className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700"
+              aria-label="Trending hunt"
+            >
+              Trending
+            </span>
+          )}
+        </div>
+        <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">
+          {hunt.description}
+        </CardDescription>
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-[#3737A4]">
+              {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
+              hunt.rewardType === "XLM" ? "bg-green-50 text-green-700" :
+              hunt.rewardType === "NFT" ? "bg-purple-50 text-purple-700" :
+              "bg-amber-50 text-amber-700"
+            }`}>
+              {hunt.rewardType} Reward
+            </span>
+            {playerCount && !playerCount.isLoading && !playerCount.error && (
+              <span
+                className="player-count inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300"
+                aria-label={`${playerCount.count} player${playerCount.count !== 1 ? "s" : ""} registered`}
+              >
+                {playerCount.count} player{playerCount.count !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2 mt-2 w-full justify-between">
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold h-8 text-[11px] px-3"
+              onClick={() => {
+                window.location.href = `/hunt/${hunt.id}`
+              }}
+            >
+              Play
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-[#3737A4] hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 h-8 text-[11px] font-semibold dark:text-blue-400"
+              onClick={() => {
+                window.location.href = `/hunt/${hunt.id}/leaderboard`
+              }}
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              Watch Live
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function VirtualizedActiveHuntsGrid({
+  hunts,
+  playerCounts,
+}: {
+  hunts: StoredHunt[]
+  playerCounts: ReturnType<typeof usePlayerCounts>["counts"]
+}) {
+  const parentRef = useRef<HTMLDivElement | null>(null)
+  const [columnCount, setColumnCount] = useState(1)
+  const [scrollMargin, setScrollMargin] = useState(0)
+  const rowCount = Math.ceil(hunts.length / columnCount)
+
+  useEffect(() => {
+    const parent = parentRef.current
+    if (!parent) return
+
+    const updateGridMetrics = () => {
+      setColumnCount(getActiveGridColumnCount(parent.getBoundingClientRect().width))
+      setScrollMargin(window.scrollY + parent.getBoundingClientRect().top)
+    }
+
+    updateGridMetrics()
+    const resizeObserver = new ResizeObserver(updateGridMetrics)
+    resizeObserver.observe(parent)
+    window.addEventListener("resize", updateGridMetrics)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", updateGridMetrics)
+    }
+  }, [])
+
+  const rowVirtualizer = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => ACTIVE_CARD_ESTIMATED_HEIGHT,
+    gap: ACTIVE_GRID_GAP,
+    overscan: 3,
+    scrollMargin,
+  })
+
+  return (
+    <div ref={parentRef} className="relative w-full">
+      <div
+        className="relative w-full"
+        style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const startIndex = virtualRow.index * columnCount
+          const rowHunts = hunts.slice(startIndex, startIndex + columnCount)
+
+          return (
+            <div
+              key={virtualRow.key}
+              data-index={virtualRow.index}
+              ref={rowVirtualizer.measureElement}
+              className="absolute left-0 top-0 grid w-full"
+              style={{
+                gap: `${ACTIVE_GRID_GAP}px`,
+                gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                transform: `translateY(${virtualRow.start - scrollMargin}px)`,
+              }}
+            >
+              {rowHunts.map((hunt) => (
+                <ActiveHuntCard
+                  key={hunt.id}
+                  hunt={hunt}
+                  playerCount={playerCounts.get(String(hunt.id))}
+                />
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function GameArcade() {
@@ -429,85 +597,7 @@ export default function GameArcade() {
               {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredHunts.map((hunt) => {
-                const pc = playerCounts.get(String(hunt.id))
-                return (
-                <Card
-                  key={hunt.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <HuntCoverImage
-                    src={hunt.coverImageCid}
-                    alt={`${hunt.title} cover`}
-                    className="relative w-full h-40 bg-slate-100"
-                  />
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-lg font-semibold line-clamp-2 dark:text-slate-100 flex-1">
-                        {hunt.title}
-                      </CardTitle>
-                      {pc?.isTrending && (
-                        <span
-                          className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700"
-                          aria-label="Trending hunt"
-                        >
-                          🔥 Trending
-                        </span>
-                      )}
-                    </div>
-                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">
-                      {hunt.description}
-                    </CardDescription>
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-[#3737A4]">
-                          {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
-                        </span>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
-                          hunt.rewardType === "XLM" ? "bg-green-50 text-green-700" :
-                          hunt.rewardType === "NFT" ? "bg-purple-50 text-purple-700" :
-                          "bg-amber-50 text-amber-700"
-                        }`}>
-                          {hunt.rewardType} Reward
-                        </span>
-                        {pc && !pc.isLoading && !pc.error && (
-                          <span
-                            className="player-count inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300"
-                            aria-label={`${pc.count} player${pc.count !== 1 ? "s" : ""} registered`}
-                          >
-                            👥 {pc.count} player{pc.count !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 mt-2 w-full justify-between">
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold h-8 text-[11px] px-3"
-                          onClick={() => {
-                            window.location.href = `/hunt/${hunt.id}`
-                          }}
-                        >
-                          Play
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-[#3737A4] hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 h-8 text-[11px] font-semibold dark:text-blue-400"
-                          onClick={() => {
-                            window.location.href = `/hunt/${hunt.id}/leaderboard`
-                          }}
-                        >
-                          <Trophy className="w-3.5 h-3.5" />
-                          Watch Live
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                )
-              })}
-            </div>
+            <VirtualizedActiveHuntsGrid hunts={filteredHunts} playerCounts={playerCounts} />
           )}
         </div>
 
