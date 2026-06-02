@@ -74,6 +74,8 @@ export default function GameArcade() {
   const { data: hunts = [], isLoading: isLoadingHunts } = useQuery({
     queryKey: ["activeHunts"],
     queryFn: async () => fetchAllHunts(),
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 
   // Fetch player counts for all visible hunts. refetch is called on mount via
