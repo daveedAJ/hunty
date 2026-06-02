@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useContext, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { formatISOString } from "@/lib/dateUtils"
 import { logger } from "@/lib/logger"
@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger"
 import { Header } from "@/components/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useWallet, shortenAddress } from "@/lib/context/WalletContext"
+import { WalletContext, shortenAddress } from "@/lib/context/WalletContext"
 import { NftGallery } from "@/components/NftGallery"
 import { BadgeWall } from "@/components/BadgeWall"
 import type { NftRewardDetail } from "@/components/NftDetailModal"
@@ -168,7 +168,9 @@ async function fetchPlayerRewards(address: string): Promise<NftReward[]> {
 
 
 export default function UserProfilePage() {
-  const { connected, publicKey } = useWallet()
+  const wallet = useContext(WalletContext)
+  const connected = wallet?.connected ?? false
+  const publicKey = wallet?.publicKey ?? ""
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([])
   const [nftRewards, setNftRewards] = useState<NftReward[]>([])
   const [registrations, setRegistrations] = useState<RegisteredHunt[]>([])
@@ -178,6 +180,8 @@ export default function UserProfilePage() {
   useEffect(() => {
     if (!connected || !publicKey) {
       setHunts([])
+      setNftRewards([])
+      setRegistrations([])
       return
     }
 

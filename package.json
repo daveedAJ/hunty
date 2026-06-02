@@ -1,7 +1,8 @@
 {
-  "name": "galagiorchi",
+  "name": "hunty",
   "version": "0.1.0",
   "private": true,
+  "description": "Cross-platform scavenger hunt dApp using Next.js, Expo, IPFS, and Stellar/Soroban.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

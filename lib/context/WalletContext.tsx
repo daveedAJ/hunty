@@ -50,7 +50,7 @@ interface WalletContextValue {
   disconnect: () => void
 }
 
-const WalletContext = createContext<WalletContextValue | null>(null)
+export const WalletContext = createContext<WalletContextValue | null>(null)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const mounted = useIsMounted()
