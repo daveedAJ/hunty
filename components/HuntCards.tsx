@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -82,6 +82,40 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const [isPending, setIsPending] = useState(false);
   const [imgGatewayIdx, setImgGatewayIdx] = useState(0);
   const [hintRevealed, setHintRevealed] = useState(false);
+  const [keyboardInsetHeight, setKeyboardInsetHeight] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateInset = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) {
+        setKeyboardInsetHeight(0);
+        return;
+      }
+
+      const inset = Math.max(0, window.innerHeight - viewport.height);
+      setKeyboardInsetHeight(inset);
+    };
+
+    updateInset();
+    window.addEventListener("resize", updateInset);
+    window.visualViewport?.addEventListener("resize", updateInset);
+    window.visualViewport?.addEventListener("scroll", updateInset);
+
+    return () => {
+      window.removeEventListener("resize", updateInset);
+      window.visualViewport?.removeEventListener("resize", updateInset);
+      window.visualViewport?.removeEventListener("scroll", updateInset);
+    };
+  }, []);
+
+  const handleInputFocus = () => {
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      document.activeElement?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    }, 120);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isPending) return;
@@ -320,7 +354,14 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
       </div>
 
       {/* Input and button only for active, non-preview cards */}
-      <div className="bg-white dark:bg-slate-900 flex gap-2 p-4 sm:p-6 rounded-b-xl sm:rounded-b-2xl items-center print:hidden">
+      <div
+        data-testid="answer-row"
+        className="sticky bottom-0 left-0 z-20 bg-white dark:bg-slate-900 flex gap-2 p-4 sm:p-6 rounded-b-xl sm:rounded-b-2xl items-center print:hidden"
+        style={{
+          bottom: `max(env(keyboard-inset-height, 0px), ${keyboardInsetHeight}px, env(safe-area-inset-bottom, 0px))`,
+          backdropFilter: "saturate(180%) blur(18px)",
+        }}
+      >
         <Input
           placeholder={isActive && !preview ? "Enter answer" : "Locked"}
           className={cn(
@@ -330,6 +371,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
           disabled={isLocked}
         />
         <Button
