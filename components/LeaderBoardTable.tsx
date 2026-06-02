@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, memo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { get_hunt_leaderboard } from "@/lib/contracts/hunt"
@@ -14,7 +14,7 @@ interface LeaderboardTableProps {
   isLoading?: boolean
 }
 
-export function LeaderboardTable({ huntId, data: initialData, isLoading: initialLoading = false }: LeaderboardTableProps) {
+function LeaderboardTableComponent({ huntId, data: initialData, isLoading: initialLoading = false }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardDisplayEntry[]>(initialData || [])
   const [isLoading, setIsLoading] = useState(initialLoading)
   const [error, setError] = useState<string | null>(null)
@@ -135,3 +135,5 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
     </div>
   )
 }
+
+export const LeaderboardTable = memo(LeaderboardTableComponent)
