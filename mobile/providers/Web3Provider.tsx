@@ -3,6 +3,7 @@ import SignClient from '@walletconnect/sign-client';
 import Constants from 'expo-constants';
 import { useWalletStore } from '@store/useStore';
 import { saveSession, loadSession, clearSession } from '@services/walletSession';
+import { registerPushToken, unregisterPushToken } from '@services/notifications/tokenRegistry';
 
 type SessionInfo = {
   topic: string;
@@ -59,6 +60,8 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession({ topic: persisted.topic, publicKey: persisted.publicKey, network: persisted.network });
         setWallet(persisted.publicKey);
         setNetwork(persisted.network.includes('main') ? 'mainnet' : 'testnet');
+        // #360 — Refresh token registration after session restore
+        void registerPushToken(persisted.publicKey);
       }
     };
     void restorePersistedSession();
@@ -182,6 +185,8 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         setNetwork(net.includes('main') ? 'mainnet' : 'testnet');
         // #189 — Persist new session so it survives app restarts
         void saveSession(sessionInfo);
+        // #360 — Register push token after wallet connect
+        void registerPushToken(pubKey);
       }
     } finally {
       if (mountedRef.current) {
@@ -210,6 +215,8 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       clearWallet();
       // #189 — Remove persisted session on explicit user disconnect
       void clearSession();
+      // #360 — Unregister push token on wallet disconnect
+      void unregisterPushToken();
     }
   }, [session, clearWallet]);
 
