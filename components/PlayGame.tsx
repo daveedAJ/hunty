@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/Header";
 import { PlayerProgressPanel } from "@/components/PlayerProgressPanel";
 import { get_clue_info, get_hunt } from "@/lib/contracts/hunt";
+import { SOROBAN_READ_STALE_TIME_MS } from "@/lib/soroban/queryConfig";
 
 import { HuntCards } from "./HuntCards";
 import Replay from "./icons/Replay";
@@ -72,6 +73,7 @@ export function PlayGame({
       return { clues, huntInfo };
     },
     enabled: huntId != null,
+    staleTime: SOROBAN_READ_STALE_TIME_MS,
   });
 
   const error: string | null = queryError instanceof Error ? queryError.message : queryError ? "Failed to fetch clues" : null;

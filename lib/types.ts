@@ -219,6 +219,8 @@ export interface HuntDraft {
   image?: string
 }
 
+export type CoverImageUploadState = "idle" | "uploading" | "succeeded" | "failed"
+
 // ─── Player Count ────────────────────────────────────────────────────────────
 
 /**

@@ -68,7 +68,7 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
       </div>
 
       {/* Time */}
-      <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+      <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-300 tabular-nums">
         {relativeTime(event.timestamp)}
       </span>
     </motion.div>
@@ -194,7 +194,7 @@ export function GlobalActivityFeed({
             <SkeletonItem />
           </>
         ) : events.length === 0 ? (
-          <div className="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
+          <div className="text-center py-6 text-slate-500 dark:text-slate-300 text-sm">
             No activity yet — be the first to complete a hunt!
           </div>
         ) : (

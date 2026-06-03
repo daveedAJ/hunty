@@ -8,6 +8,7 @@
  */
 
 const PINATA_GATEWAY = process.env.NEXT_PUBLIC_PINATA_GATEWAY
+export const COVER_IMAGE_UPLOAD_ERROR_MESSAGE = "Failed to upload cover image. Please try again."
 
 // Ordered list of public fallback gateways.
 const GATEWAYS: string[] = [
@@ -77,6 +78,11 @@ export async function uploadToIPFS(file: File): Promise<string> {
     throw new Error(err.error ?? "IPFS upload failed")
   }
 
-  const { cid } = await res.json() as { cid: string }
+  const data = await res.json().catch(() => null) as { cid?: string } | null
+  const cid = data?.cid?.trim()
+  if (!cid) {
+    throw new Error("IPFS upload response did not include a CID")
+  }
+
   return `ipfs://${cid}`
 }

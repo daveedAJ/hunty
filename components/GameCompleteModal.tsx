@@ -11,6 +11,7 @@ import Replay from "@/components/icons/Replay"
 import { RewardsPanel } from "@/components/RewardsPanel"
 import { useQuery } from "@tanstack/react-query"
 import { checkRegistrationStatus } from "@/lib/contracts/player-registration"
+import { SOROBAN_READ_STALE_TIME_MS } from "@/lib/soroban/queryConfig"
 import { useRef, useState } from "react"
 import { useXlmUsdPrice } from "@/hooks/useXlmUsdPrice"
 import { AchievementCertificate } from "@/components/AchievementCertificate"
@@ -67,6 +68,7 @@ export function GameCompleteModal({
     queryKey: ["registrationStatus", huntId, playerAddress],
     queryFn: () => (huntId && playerAddress ? checkRegistrationStatus(huntId, playerAddress) : null),
     enabled: isOpen && !!huntId && !!playerAddress,
+    staleTime: SOROBAN_READ_STALE_TIME_MS,
   });
 
   const playerProgress = registrationStatus?.progressData ? {

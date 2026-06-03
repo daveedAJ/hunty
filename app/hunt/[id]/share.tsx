@@ -7,7 +7,7 @@ import { QrCodeModal } from "@/components/QrCodeModal";
 import type { StoredHunt } from "@/lib/types";
 import { updateHuntStatus } from "@/lib/huntStore";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { RegistrationButton } from "@/components/RegistrationButton";
 import { PlayInterfaceGuard } from "@/components/PlayInterfaceGuard";
 import { 
@@ -20,6 +20,8 @@ import {
 import { PlayGame } from "@/components/PlayGame";
 import { GameCompleteModal } from "@/components/GameCompleteModal";
 import { useQueryClient } from "@tanstack/react-query";
+import { debounce } from "@/lib/debounce";
+import { REGISTRATION_STATUS_DEBOUNCE_MS } from "@/lib/soroban/queryConfig";
 
 interface HuntDetailProps {
   hunt: StoredHunt;
@@ -84,34 +86,69 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
     }
   }, []);
 
-  // Check registration status when wallet is connected (Requirement 1.1, 2.3)
-  useEffect(() => {
-    async function checkStatus() {
-      if (!walletCheckComplete) {
-        return;
-      }
+  const refreshRegistrationStatus = useCallback(async (isActive: () => boolean = () => true) => {
+    if (!walletCheckComplete || !isActive()) {
+      return;
+    }
 
-      if (!connectedPublicKey) {
+    if (!connectedPublicKey) {
+      if (isActive()) {
         setRegistrationStatus({
           isRegistered: false,
           loading: false,
           error: "Please connect your wallet to continue",
         });
-        return;
       }
-
-      // Set loading state
-      setRegistrationStatus({
-        isRegistered: false,
-        loading: true,
-      });
-
-      const status = await checkRegistrationStatus(hunt.id, connectedPublicKey);
-      setRegistrationStatus(status);
+      return;
     }
 
-    checkStatus();
+    // Set loading state
+    setRegistrationStatus({
+      isRegistered: false,
+      loading: true,
+    });
+
+    const status = await checkRegistrationStatus(hunt.id, connectedPublicKey);
+    if (isActive()) {
+      setRegistrationStatus(status);
+    }
   }, [hunt.id, connectedPublicKey, walletCheckComplete]);
+
+  // Check registration status when wallet is connected (Requirement 1.1, 2.3)
+  useEffect(() => {
+    let isActive = true;
+    const debouncedCheckStatus = debounce(
+      () => {
+        void refreshRegistrationStatus(() => isActive);
+      },
+      REGISTRATION_STATUS_DEBOUNCE_MS
+    );
+
+    debouncedCheckStatus();
+
+    return () => {
+      isActive = false;
+      debouncedCheckStatus.cancel();
+    };
+  }, [refreshRegistrationStatus]);
+
+  // Handle player registration (Requirements 1.3, 1.4, 1.5)
+  const handleRegister = async () => {
+    if (!connectedPublicKey) {
+      return;
+    }
+
+    const result = await registerPlayer(hunt.id, connectedPublicKey);
+    
+    if (result.success) {
+      // Clear cache and refresh registration status after successful registration
+      clearRegistrationCache(hunt.id, connectedPublicKey);
+      await refreshRegistrationStatus();
+    } else {
+      // Error is already handled by RegistrationButton component
+      throw new Error(result.error || "Registration failed");
+    }
+  };
 
   // Track anonymous hunt page views for creator engagement analytics.
   useEffect(() => {
@@ -125,30 +162,11 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
           body: JSON.stringify({ huntId: hunt.id }),
           keepalive: true,
         })
-      } catch (error) {
+      } catch {
         // analytics failure should not affect the user experience
       }
     })()
   }, [hunt.id])
-
-  // Handle player registration (Requirements 1.3, 1.4, 1.5)
-  const handleRegister = async () => {
-    if (!connectedPublicKey) {
-      return;
-    }
-
-    const result = await registerPlayer(hunt.id, connectedPublicKey);
-    
-    if (result.success) {
-      // Clear cache and refresh registration status after successful registration
-      clearRegistrationCache(hunt.id, connectedPublicKey);
-      const updatedStatus = await checkRegistrationStatus(hunt.id, connectedPublicKey);
-      setRegistrationStatus(updatedStatus);
-    } else {
-      // Error is already handled by RegistrationButton component
-      throw new Error(result.error || "Registration failed");
-    }
-  };
 
   const handleShare = async () => {
     const url = `${window.location.origin}/hunt/${hunt.id}`;

@@ -76,6 +76,40 @@ describe('checkRegistrationStatus', () => {
     expect(mockGetProgress).toHaveBeenCalledTimes(1) // Still 1, not 2
   })
 
+  it('should reuse one in-flight registration status request for concurrent callers', async () => {
+    const mockProgress: PlayerProgress = {
+      hunt_id: mockHuntId,
+      player: mockPlayerAddress,
+      current_clue_index: 0,
+      completed: false,
+    }
+    let resolveProgress!: (value: PlayerProgress | null) => void
+    const progressPromise = new Promise<PlayerProgress | null>((resolve) => {
+      resolveProgress = resolve
+    })
+    const mockGetProgress = vi.fn().mockReturnValue(progressPromise)
+
+    const firstStatus = checkRegistrationStatus(mockHuntId, mockPlayerAddress, mockGetProgress)
+    const secondStatus = checkRegistrationStatus(mockHuntId, mockPlayerAddress, mockGetProgress)
+
+    expect(mockGetProgress).toHaveBeenCalledTimes(1)
+
+    resolveProgress(mockProgress)
+
+    await expect(Promise.all([firstStatus, secondStatus])).resolves.toEqual([
+      {
+        isRegistered: true,
+        progressData: mockProgress,
+        loading: false,
+      },
+      {
+        isRegistered: true,
+        progressData: mockProgress,
+        loading: false,
+      },
+    ])
+  })
+
   it('should query again after cache is cleared', async () => {
     // Mock getPlayerProgress to return null
     const mockGetProgress = vi.fn().mockResolvedValue(null)

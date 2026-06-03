@@ -6,6 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import type { Clue, HuntStatus, StoredHunt } from '@lib/types';
 
+import type { HuntStatus, StoredHunt, Clue } from "@lib/types";
+import * as SecureStore from "expo-secure-store";
+import { scheduleHuntExpiryNotification } from "@utils/huntNotifications";
 const HUNTS_KEY = 'hunty_hunts';
 const CLUES_KEY = 'hunty_clues';
 
@@ -229,4 +232,15 @@ export async function getFeaturedHunts(limit = 3): Promise<StoredHunt[]> {
       return leftEnds - rightEnds || right.cluesCount - left.cluesCount;
     })
     .slice(0, limit);
+}
+
+/**
+ * Record that the current player has joined a hunt and schedule a local
+ * notification 1 hour before the hunt expires.
+ */
+export async function joinHunt(huntId: number): Promise<void> {
+  const hunts = await readHunts();
+  const hunt = hunts.find((h) => h.id === huntId);
+  if (!hunt || !hunt.endTime) return;
+  await scheduleHuntExpiryNotification(huntId, hunt.title, hunt.endTime);
 }

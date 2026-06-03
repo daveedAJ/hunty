@@ -12,10 +12,11 @@ import { addClue } from "@/lib/contracts/hunt"
 import { saveClueLocally, updateClueAnswer } from "@/lib/huntStore"
 import { sha256Hex } from "@/lib/crypto"
 import { withTransactionToast } from "@/lib/txToast"
-import { uploadToIPFS } from "@/lib/ipfs"
+import { COVER_IMAGE_UPLOAD_ERROR_MESSAGE, uploadToIPFS } from "@/lib/ipfs"
+import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { HuntCards } from "./HuntCards"
-import type { HuntDraft } from "@/lib/types"
+import type { CoverImageUploadState, HuntDraft } from "@/lib/types"
 
 interface HuntFormProps {
   hunt: HuntDraft
@@ -23,6 +24,7 @@ interface HuntFormProps {
   onRemove: () => void
   huntId?: number
   onCluesSaved?: (count: number) => void
+  onImageUploadStateChange?: (state: CoverImageUploadState) => void
 }
 
 const clueSchema = z.object({
@@ -40,12 +42,13 @@ const cluesFormSchema = z.object({
 
 type CluesFormData = z.infer<typeof cluesFormSchema>
 
-export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: HuntFormProps) {
+export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved, onImageUploadStateChange }: HuntFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSavingClues, setIsSavingClues] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [linkEnabled, setLinkEnabled] = useState(false)
+  const [imageUploadState, setImageUploadState] = useState<CoverImageUploadState>("idle")
 
   const {
     control,
@@ -64,20 +67,40 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
     name: "clues",
   })
 
+  const updateImageUploadState = (state: CoverImageUploadState) => {
+    setImageUploadState(state)
+    onImageUploadStateChange?.(state)
+  }
+
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    updateImageUploadState("uploading")
     setIsUploading(true)
 
     try {
       const ipfsUri = await uploadToIPFS(file)
-      onUpdate('image', ipfsUri)
+      onUpdate("image", ipfsUri)
+      updateImageUploadState("succeeded")
     } catch (error) {
-      logger.error('Error uploading image to IPFS:', error)
-      toast.error(error instanceof Error ? error.message : 'Image upload failed')
+      logger.error("Error uploading image to IPFS:", error)
+      updateImageUploadState("failed")
+      toast.error(COVER_IMAGE_UPLOAD_ERROR_MESSAGE)
     } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
       setIsUploading(false)
+    }
+  }
+
+  const handleClearImage = () => {
+    onUpdate("image", "")
+    updateImageUploadState("idle")
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
 
@@ -165,6 +188,12 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
             Remove
           </Button>
         </div>
+
+        {errors.clues?.message && (
+          <div role="alert" aria-live="assertive" id="clues-error" className="text-red-500 text-sm mt-2">
+            {errors.clues.message}
+          </div>
+        )}
       </div>
 
       {showPreview && (
@@ -234,6 +263,22 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           )}
         </div>
       </div>
+      {(hunt.image || imageUploadState === "failed") && (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className={imageUploadState === "failed" ? "text-red-500" : "text-slate-500 dark:text-slate-400"}>
+            {imageUploadState === "failed" ? "Cover image upload failed." : "Cover image attached."}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearImage}
+            className="h-auto px-0 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            {hunt.image ? "Remove cover image" : "Skip cover image"}
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -284,13 +329,21 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                       <Input
                         placeholder="Riddle / Question"
                         aria-label={`Clue ${index + 1} Question`}
+                        aria-describedby={errors.clues?.[index]?.question ? `clue-${index}-question-error` : undefined}
                         {...f}
                         className="pl-3 py-2 text-sm"
                       />
                     )}
                   />
                   {errors.clues?.[index]?.question && (
-                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].question.message}</span>
+                    <span
+                      role="alert"
+                      aria-live="assertive"
+                      id={`clue-${index}-question-error`}
+                      className="text-red-500 text-xs mt-0.5"
+                    >
+                      {errors.clues[index].question.message}
+                    </span>
                   )}
                 </div>
                 <div className="w-32 flex flex-col">
@@ -300,15 +353,23 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                     render={({ field: f }) => (
                       <Input
                         placeholder="Answer (use | for multiple)"
-                        aria-label={`Clue ${index + 1} Answer`}
-                        {...f}
+                          aria-label={`Clue ${index + 1} Answer`}
+                          aria-describedby={errors.clues?.[index]?.answer ? `clue-${index}-answer-error` : undefined}
+                          {...f}
                         className="pl-3 py-2 text-sm"
                       />
                     )}
                   />
-                  {errors.clues?.[index]?.answer && (
-                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].answer.message}</span>
-                  )}
+                    {errors.clues?.[index]?.answer && (
+                      <span
+                        role="alert"
+                        aria-live="assertive"
+                        id={`clue-${index}-answer-error`}
+                        className="text-red-500 text-xs mt-0.5"
+                      >
+                        {errors.clues[index].answer.message}
+                      </span>
+                    )}
                 </div>
                 <div className="w-16 flex flex-col">
                   <Controller

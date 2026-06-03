@@ -331,6 +331,8 @@ const registrationStatusCache = new Map<string, {
   timestamp: number
 }>()
 
+const registrationStatusRequests = new Map<string, Promise<RegistrationStatus>>()
+
 /**
  * Cache TTL in milliseconds (5 minutes)
  */
@@ -378,38 +380,50 @@ export async function checkRegistrationStatus(
     return cached.status
   }
 
-  try {
-    // Query player progress from contract
-    const progressData = await getProgressFn(huntId, playerAddress)
-
-    const status: RegistrationStatus = {
-      isRegistered: progressData !== null,
-      progressData: progressData ?? undefined,
-      loading: false,
-    }
-
-    // Cache the result
-    registrationStatusCache.set(cacheKey, {
-      status,
-      timestamp: Date.now(),
-    })
-
-    return status
-  } catch (error) {
-    const errorMessage = error instanceof RegistrationError 
-      ? error.message 
-      : error instanceof Error 
-        ? error.message 
-        : "Unable to check registration status"
-
-    const errorStatus: RegistrationStatus = {
-      isRegistered: false,
-      loading: false,
-      error: errorMessage,
-    }
-
-    return errorStatus
+  const inFlight = registrationStatusRequests.get(cacheKey)
+  if (inFlight) {
+    return inFlight
   }
+
+  const request = (async () => {
+    try {
+      // Query player progress from contract
+      const progressData = await getProgressFn(huntId, playerAddress)
+
+      const status: RegistrationStatus = {
+        isRegistered: progressData !== null,
+        progressData: progressData ?? undefined,
+        loading: false,
+      }
+
+      // Cache the result
+      registrationStatusCache.set(cacheKey, {
+        status,
+        timestamp: Date.now(),
+      })
+
+      return status
+    } catch (error) {
+      const errorMessage = error instanceof RegistrationError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Unable to check registration status"
+
+      const errorStatus: RegistrationStatus = {
+        isRegistered: false,
+        loading: false,
+        error: errorMessage,
+      }
+
+      return errorStatus
+    } finally {
+      registrationStatusRequests.delete(cacheKey)
+    }
+  })()
+
+  registrationStatusRequests.set(cacheKey, request)
+  return request
 }
 
 /**
@@ -422,6 +436,7 @@ export async function checkRegistrationStatus(
 export function clearRegistrationCache(huntId: number, playerAddress: string): void {
   const cacheKey = getCacheKey(huntId, playerAddress)
   registrationStatusCache.delete(cacheKey)
+  registrationStatusRequests.delete(cacheKey)
 }
 
 /**

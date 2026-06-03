@@ -71,9 +71,51 @@ export default function GameArcade() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Completed">("Active")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "clues-high" | "clues-low">("newest")
 
+  const isLoadedRef = useRef(false)
+
+  // Load initial filter states from sessionStorage to persist state within the session
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedSearch = sessionStorage.getItem("arcade_searchQuery")
+      if (savedSearch) setSearchQuery(savedSearch)
+
+      const savedReward = sessionStorage.getItem("arcade_rewardFilter")
+      if (savedReward && ["all", "XLM", "NFT", "Both"].includes(savedReward)) {
+        setRewardFilter(savedReward as any)
+      }
+
+      const savedStatus = sessionStorage.getItem("arcade_statusFilter")
+      if (savedStatus && ["all", "Active", "Completed"].includes(savedStatus)) {
+        setStatusFilter(savedStatus as any)
+      }
+      isLoadedRef.current = true
+    }
+  }, [])
+
+  // Sync states to sessionStorage on change
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_searchQuery", searchQuery)
+    }
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_rewardFilter", rewardFilter)
+    }
+  }, [rewardFilter])
+
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_statusFilter", statusFilter)
+    }
+  }, [statusFilter])
+
   const { data: hunts = [], isLoading: isLoadingHunts } = useQuery({
     queryKey: ["activeHunts"],
     queryFn: async () => fetchAllHunts(),
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 
   // Fetch player counts for all visible hunts. refetch is called on mount via
@@ -429,12 +471,13 @@ export default function GameArcade() {
               {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div data-testid="arcade-hunt-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredHunts.map((hunt) => {
                 const pc = playerCounts.get(String(hunt.id))
                 return (
                 <Card
                   key={hunt.id}
+                  data-testid="arcade-hunt-card"
                   className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <HuntCoverImage

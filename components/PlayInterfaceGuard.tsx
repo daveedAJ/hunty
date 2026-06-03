@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { checkRegistrationStatus } from "@/lib/contracts/player-registration";
 import type { RegistrationStatus } from "@/lib/types";
 import { RegistrationButton } from "@/components/RegistrationButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { debounce } from "@/lib/debounce";
+import { REGISTRATION_STATUS_DEBOUNCE_MS } from "@/lib/soroban/queryConfig";
 
 interface PlayInterfaceGuardProps {
   huntId: number;
@@ -35,35 +37,49 @@ export function PlayInterfaceGuard({
     loading: true,
   });
 
-  // Check registration status on mount and when dependencies change
-  useEffect(() => {
-    let isMounted = true;
+  const refreshRegistrationStatus = useCallback(async (isActive: () => boolean = () => true) => {
+    if (!isActive()) return;
 
-    async function checkStatus() {
-      setRegistrationStatus({
-        isRegistered: false,
-        loading: true,
-      });
+    setRegistrationStatus({
+      isRegistered: false,
+      loading: true,
+    });
 
-      const status = await checkRegistrationStatus(huntId, playerAddress);
+    const status = await checkRegistrationStatus(huntId, playerAddress);
 
-      if (isMounted) {
-        setRegistrationStatus(status);
-      }
+    if (isActive()) {
+      setRegistrationStatus(status);
     }
+  }, [huntId, playerAddress]);
 
-    checkStatus();
+  useEffect(() => {
+    let isActive = true;
+    const debouncedCheckStatus = debounce(
+      () => {
+        void refreshRegistrationStatus(() => isActive);
+      },
+      REGISTRATION_STATUS_DEBOUNCE_MS
+    );
+
+    debouncedCheckStatus();
 
     return () => {
-      isMounted = false;
+      isActive = false;
+      debouncedCheckStatus.cancel();
     };
-  }, [huntId, playerAddress]);
+  }, [refreshRegistrationStatus]);
 
   // Handle registration
   const handleRegister = async () => {
     if (onRegister) {
       await onRegister();
       // Refresh registration status after registration
+      await refreshRegistrationStatus();
+    } else {
+      setRegistrationStatus({
+        isRegistered: false,
+        loading: true,
+      });
       const status = await checkRegistrationStatus(huntId, playerAddress);
       setRegistrationStatus(status);
     }

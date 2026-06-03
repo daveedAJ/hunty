@@ -4,6 +4,11 @@ import { StyleSheet, View } from 'react-native';
 import { Stack, type ErrorBoundaryProps, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
+import { hideSplashScreen } from '@utils/splashScreenManager';
+import { useTheme } from '@providers/ThemeProvider';
+import { ThemedCustomText, ThemedButton } from '@components/themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hideSplashScreen, initializeSplashScreen } from '@utils/splashScreenManager';
 import { ThemeProvider, useTheme } from '@providers/ThemeProvider';
@@ -11,6 +16,7 @@ import ReactQueryProvider from '@providers/ReactQueryProvider';
 import { ToastProvider, useToast } from '@providers/ToastProvider';
 import { Web3Provider } from '@providers/Web3Provider';
 import { ModalProvider } from '@providers/ModalProvider';
+import { NotificationsProvider } from '@providers/NotificationsProvider';
 import { ThemedButton, ThemedCustomText } from '@components/themed';
 import { useFonts } from '@app/hooks/useFonts';
 import { useBackHandler } from '@hooks/useBackHandler';
@@ -20,6 +26,19 @@ import { Sentry, initializeSentry } from '@config/sentry';
 import { classifyWalletTxError } from '@/lib/walletErrors';
 import { useWalletStore } from '@store/useStore';
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+};
 initializeSplashScreen();
 initializeSentry();
 
@@ -63,7 +82,9 @@ export default function RootLayout() {
           <Web3Provider>
             <ToastProvider>
               <ModalProvider>
-                <RootLayoutNav />
+                <NotificationsProvider>
+                  <RootLayoutNav />
+                </NotificationsProvider>
               </ModalProvider>
             </ToastProvider>
           </Web3Provider>
@@ -88,6 +109,14 @@ function RootLayoutNav() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
+    Notifications.requestPermissionsAsync();
+  }, []);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (router.canGoBack()) {
+        router.back();
+        return true;
     if (!fontsLoaded && !fontError) return;
 
     let isMounted = true;

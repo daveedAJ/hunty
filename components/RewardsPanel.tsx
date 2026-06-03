@@ -15,6 +15,7 @@ export type { Reward, RewardPlayerProgress as PlayerProgress }
 
 export interface RewardsPanelProps {
   rewards: Reward[];
+  rewardType?: "XLM" | "NFT" | "Both";
   onUpdateReward?: (place: number, amount: number) => void;
   onAddReward?: () => void;
   onDeleteReward?: (place: number) => void;
@@ -23,7 +24,7 @@ export interface RewardsPanelProps {
   onClaimReward?: (hunt_id?: number | string) => Promise<void>;
 }
 
-export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteReward, error, playerProgress, onClaimReward }: RewardsPanelProps) {
+export function RewardsPanel({ rewards, rewardType = "XLM", onUpdateReward, onAddReward, onDeleteReward, error, playerProgress, onClaimReward }: RewardsPanelProps) {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimed, setClaimed] = useState(playerProgress?.reward_claimed || false);
   const { price: xlmUsdPrice } = useXlmUsdPrice()
@@ -67,7 +68,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
         <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
           <p className="text-sm font-medium text-blue-900">Total Prize Pool</p>
           <p className="text-lg font-semibold text-blue-950">
-            {totalRewardXlm.toFixed(2)} XLM
+            {totalRewardXlm.toFixed(2)} {rewardType}
             {totalRewardUsd ? ` (≈ ${totalRewardUsd})` : ""}
           </p>
         </div>

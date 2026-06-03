@@ -157,6 +157,14 @@ describe("HuntCards — card rendering", () => {
     render(<HuntCards {...defaultProps} huntEnded={true} />)
     expect(screen.getByText("Hunt Ended")).toBeInTheDocument()
   })
+
+  it("renders the answer row as a sticky footer with keyboard inset support", () => {
+    render(<HuntCards {...defaultProps} />)
+    const answerRow = screen.getByTestId("answer-row")
+    expect(answerRow).toBeInTheDocument()
+    expect(answerRow.className).toContain("sticky")
+    expect(answerRow.style.bottom).toContain("env(keyboard-inset-height")
+  })
 })
 
 // ── local answer submission ───────────────────────────────────────────────────

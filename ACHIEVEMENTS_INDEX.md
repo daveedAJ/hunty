@@ -4,7 +4,7 @@
 
 The achievement/badge system for Hunty has been fully implemented. This index helps you navigate all documentation.
 
-**Status:** ✅ Complete | **Tests:** ✅ 28/28 Passing | **Production Ready:** ✅ Yes
+**Status:** ✅ Complete | * *Tests:** ✅ 28/28 Passing | **Production Ready:** ✅ Yes
 
 ---
 
