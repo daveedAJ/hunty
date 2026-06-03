@@ -212,8 +212,8 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const isLocked = !isActive || preview || isPending || solved || huntEnded;
 
   return (
-    <div className={cn(
-      "rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 bg-white dark:bg-slate-900",
+    <div tabIndex={0} onKeyDown={handleKeyDown} className={cn(
+      "rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 bg-white dark:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
       isActive ? "sm:scale-105 border-2 border-blue-400 dark:border-blue-500" : preview ? "opacity-70" : "opacity-90"
     )}>
       {solved && (
