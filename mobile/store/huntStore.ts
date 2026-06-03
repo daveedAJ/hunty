@@ -137,10 +137,12 @@ export async function getAllHuntsIncludingPrivate(): Promise<StoredHunt[]> {
   return readHunts();
 }
 
+/** Creator hunts for dashboard (all stored hunts including private; creator filter can be added later). */
 export async function getCreatorHunts(): Promise<StoredHunt[]> {
   return readHunts();
 }
 
+/** Get hunts for a creator (creator public-key filter not implemented yet; returns all hunts). */
 export async function getHuntsByCreator(): Promise<StoredHunt[]> {
   return readHunts();
 }
