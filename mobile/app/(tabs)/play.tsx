@@ -96,7 +96,6 @@ export default function PlayScreen() {
         return;
       }
 
-      let resolvedAnswer = submittedAnswer.trim();
       if (fromQr) {
         const qrCheck = await verifyQrAgainstClue(submittedAnswer, activeClue, currentProgress.hunt_id);
         if (!qrCheck.match) {
@@ -104,7 +103,6 @@ export default function PlayScreen() {
           setError(qrCheck.reason);
           return;
         }
-        resolvedAnswer = qrCheck.answer;
       } else if (!(await matchesClueAnswer(submittedAnswer, activeClue, currentProgress.hunt_id))) {
         setError('Incorrect answer. Review the clue and try again.');
         return;
