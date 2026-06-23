@@ -109,7 +109,7 @@ const page = async ({ params }: PageProps) => {
 
       <Header />
 
-      <main className="relative max-w-3xl mx-auto px-6 pt-16">
+      <div role="main" className="relative max-w-3xl mx-auto px-6 pt-16">
         {/* Status badge */}
         <div className="mb-6">
           <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase ${status.classes}`}>
@@ -131,26 +131,26 @@ const page = async ({ params }: PageProps) => {
         {/* Metadata cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-12">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Hunt ID</p>
+            <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Hunt ID</p>
             <p className="text-white font-semibold text-lg">#{huntDetails.id}</p>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Clues</p>
+            <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Clues</p>
             <p className="text-white font-semibold text-lg">{huntDetails.cluesCount}</p>
           </div>
           <div className="col-span-2 sm:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-5">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Status</p>
+            <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Status</p>
             <p className="text-white font-semibold text-lg capitalize">{huntDetails.status}</p>
           </div>
           {huntDetails.startTime && (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Starts</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Starts</p>
               <p className="text-white font-semibold text-sm">{formatTimestamp(huntDetails.startTime)}</p>
             </div>
           )}
           {huntDetails.endTime && (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Ends</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Ends</p>
               <p className="text-white font-semibold text-sm">{formatTimestamp(huntDetails.endTime)}</p>
             </div>
           )}
@@ -162,7 +162,7 @@ const page = async ({ params }: PageProps) => {
         <FastestPlayersStrip huntId={huntDetails.id} />
 
         <HuntDetailClient hunt={huntDetails}  />
-      </main>
+      </div>
     </div>
   );
 };

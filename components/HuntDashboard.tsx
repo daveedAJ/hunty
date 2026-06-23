@@ -378,137 +378,71 @@ export function HuntDashboard({
                       </button>
                     </div>
                   </div>
-                  <StatusBadge status={hunt.status} />
-      {hunts.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center shadow-sm dark:border-white/10 dark:bg-slate-950/50">
-          <p className="text-lg font-semibold text-slate-900 dark:text-white">
-            No hunts found for this filter
-          </p>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Try another status or sort option to explore your hunt history.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {hunts.map((hunt) => {
-        {hunts.length === 0 ? (
-          <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center shadow-sm dark:border-white/10 dark:bg-slate-950/50">
-            <p className="text-lg font-semibold text-slate-900 dark:text-white">
-              No hunts found for this filter
-            </p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Try another status or sort option to explore your hunt history.
-            </p>
-          </div>
-        ) : (
-          hunts.map((hunt) => {
-            const isDraft = hunt.status === "Draft"
-            const isActive = hunt.status === "Active"
-            const isCompleted = hunt.status === "Completed"
-            const hasClues = hunt.cluesCount > 0
-            const canActivate = isDraft && hasClues
-
-            return (
-              <Card
-                key={hunt.id}
-                className={`group relative overflow-hidden rounded-2xl border transition-all ${
-                  selectedIds.has(hunt.id)
-                    ? "border-blue-400 bg-blue-50/30 ring-1 ring-blue-400 dark:border-blue-500 dark:bg-blue-900/10 dark:ring-blue-500"
-                    : "border-slate-200 bg-white shadow-sm hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:hover:border-white/20"
-                }`}
-              >
-                <div className="absolute right-3 top-3 z-10">
-                  <Checkbox
-                    checked={selectedIds.has(hunt.id)}
-                    onCheckedChange={() => toggleSelect(hunt.id)}
-                    onClick={(event) => event.stopPropagation()}
-                    className="h-5 w-5 rounded-md border-slate-300 dark:border-white/20"
-                    aria-label={`Select hunt ${hunt.title}`}
-                  />
-                </div>
-                <Link href={`/hunt/${hunt.id}`}>
-                  <div className="p-5">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="line-clamp-2 text-lg dark:text-white">
-                          {hunt.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-500 dark:bg-white/5 dark:text-slate-400">
-                          #{hunt.id}
-                          <button
-                            onClick={(event) => handleCopyId(event, hunt.id)}
-                            aria-label={`Copy hunt ID ${hunt.id}`}
-                            className="transition-colors hover:text-slate-800 dark:hover:text-white"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <StatusBadge status={hunt.status} />
-                    </div>
-                    <CardDescription className="mb-4 line-clamp-3 text-sm text-slate-600 dark:text-slate-400">
-                      {hunt.description}
-                    </CardDescription>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
-                        {hunt.playerCount ?? 0} players
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
-                        {hunt.rewardPool ?? 0} XLM reward pool
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {hunt.cluesCount} {hunt.cluesCount === 1 ? "clue" : "clues"}
-                      </span>
-                      <div className="flex gap-2">
-                        {isDraft && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openClueModal(hunt)}
-                            className="border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4] hover:text-white"
-                          >
-                            <Plus className="mr-1 h-3 w-3" />
-                            Add Clues
-                          </Button>
-                        )}
-                        {(isActive || isCompleted) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            asChild
-                            className="flex items-center gap-1.5 border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4] hover:text-white"
-                          >
-                            <Link href={`/dashboard/hunts/${hunt.id}/leaderboard`}>
-                              <Trophy className="h-4 w-4" />
-                              Leaderboard
-                            </Link>
-                          </Button>
-                        )}
-                        {isDraft && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleActivateClick(hunt)}
-                            disabled={!canActivate}
-                            className="bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:bg-green-700 disabled:pointer-events-none disabled:opacity-50"
-                          >
-                            Activate
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {isDraft && !hasClues && (
-                      <p className="mt-2 text-xs text-amber-600">
-                        Add at least one clue to activate.
-                      </p>
-                    )}
+                    <StatusBadge status={hunt.status} />
                   </div>
-                </Link>
-              </Card>
-            )
-          })
-        )}
+                  <CardDescription className="mb-4 line-clamp-3 text-sm text-slate-600 dark:text-slate-400">
+                    {hunt.description}
+                  </CardDescription>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                      {hunt.playerCount ?? 0} players
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                      {hunt.rewardPool ?? 0} XLM reward pool
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {hunt.cluesCount} {hunt.cluesCount === 1 ? "clue" : "clues"}
+                    </span>
+                    <div className="flex gap-2">
+                      {isDraft && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openClueModal(hunt)}
+                          className="border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4] hover:text-white"
+                        >
+                          <Plus className="mr-1 h-3 w-3" />
+                          Add Clues
+                        </Button>
+                      )}
+                      {(isActive || isCompleted) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="flex items-center gap-1.5 border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4] hover:text-white"
+                        >
+                          <Link href={`/dashboard/hunts/${hunt.id}/leaderboard`}>
+                            <Trophy className="h-4 w-4" />
+                            Leaderboard
+                          </Link>
+                        </Button>
+                      )}
+                      {isDraft && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleActivateClick(hunt)}
+                          disabled={!canActivate}
+                          className="bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:bg-green-700 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          Activate
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {isDraft && !hasClues && (
+                    <p className="mt-2 text-xs text-amber-600">
+                      Add at least one clue to activate.
+                    </p>
+                  )}
+                </div>
+              </Link>
+            </Card>
+          )
+        })}
+      </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500 dark:text-slate-400">

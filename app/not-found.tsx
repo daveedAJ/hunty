@@ -11,7 +11,7 @@ export default function NotFound() {
 
       <Header />
 
-      <main className="relative max-w-3xl mx-auto px-6 pt-24 text-center">
+      <div role="main" className="relative max-w-3xl mx-auto px-6 pt-24 text-center">
         <h1 className="text-6xl font-extrabold mb-4">404</h1>
         <p className="text-zinc-400 text-lg mb-8">We couldn't find that hunt.</p>
 
@@ -21,7 +21,7 @@ export default function NotFound() {
             Return to Game Arcade
           </Link>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
