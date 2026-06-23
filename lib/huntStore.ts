@@ -160,6 +160,24 @@ export function updateHuntEndTime(huntId: number, newEndTime: number): void {
   writeHunts(hunts)
 }
 
+/** Update reward escrow metadata after deposits, payouts, or refunds. */
+export function updateHuntRewardEscrow(
+  huntId: number,
+  rewardEscrowBalance: number,
+  rewardEscrowTxHash?: string
+): void {
+  const hunts = readHunts().map((h) =>
+    h.id === huntId
+      ? {
+          ...h,
+          rewardEscrowBalance,
+          ...(rewardEscrowTxHash ? { rewardEscrowTxHash } : {}),
+        }
+      : h
+  )
+  writeHunts(hunts)
+}
+
 /** Delete multiple hunts by IDs. */
 export function deleteHunts(ids: number[]): void {
   const hunts = readHunts().filter((h) => !ids.includes(h.id))

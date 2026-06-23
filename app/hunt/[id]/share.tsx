@@ -22,6 +22,9 @@ import { GameCompleteModal } from "@/components/GameCompleteModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { debounce } from "@/lib/debounce";
 import { REGISTRATION_STATUS_DEBOUNCE_MS } from "@/lib/soroban/queryConfig";
+import { distributeCompletionReward } from "@/lib/contracts/rewardManager";
+import { withTransactionToast } from "@/lib/txToast";
+import type { RewardReceipt } from "@/lib/types";
 
 interface HuntDetailProps {
   hunt: StoredHunt;
@@ -31,6 +34,7 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
   const router = useRouter();
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [completionScore, setCompletionScore] = useState(0);
+  const [rewardReceipt, setRewardReceipt] = useState<RewardReceipt | null>(null);
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [connectedPublicKey, setConnectedPublicKey] = useState<string | undefined>(undefined);
@@ -266,11 +270,25 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
               hunts={[]} // PlayGame will fetch clues itself using huntId
               gameName={hunt.title}
               onExit={() => router.push("/")}
-              onGameComplete={(score) => {
+              onGameComplete={async (score) => {
                 // Refresh registration status to show completion/rewards
                 clearRegistrationCache(hunt.id, connectedPublicKey);
                 queryClient.invalidateQueries({ queryKey: ["registrationStatus", hunt.id, connectedPublicKey] });
-                setCompletionScore(score);
+                const payout = hunt.rewardType === "NFT"
+                  ? null
+                  : await withTransactionToast(
+                      async (setStage) => {
+                        setStage("approving");
+                        return distributeCompletionReward(hunt.id, connectedPublicKey);
+                      },
+                      {
+                        pending: "Pending - preparing reward distribution...",
+                        approving: "Approving - sign the reward receipt in your wallet...",
+                        confirmed: "Reward distributed!",
+                      }
+                    );
+                setCompletionScore(payout?.amount ?? score);
+                setRewardReceipt(payout?.receipt ?? null);
                 setIsCompleteModalOpen(true);
               }}
               huntId={hunt.id}
@@ -288,6 +306,7 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
             }}
             onViewLeaderboard={() => router.push(`/?huntId=${hunt.id}&tab=leaderboard`)}
             reward={completionScore}
+            rewardReceipt={rewardReceipt}
             huntId={hunt.id}
             playerAddress={connectedPublicKey}
           />
