@@ -95,6 +95,12 @@ export type CreateHuntResult = {
   txHash: string
 }
 
+export type ClaimRewardResult = {
+  txHash: string
+  /** ipfs:// URI for the SEP-0039 compliant metadata JSON uploaded before minting. */
+  metadataUri: string
+}
+
 export type SubmitAnswerResult = {
   txHash: string
   /** The contract event emitted on success. */
@@ -295,6 +301,8 @@ export interface NftRewardDetail {
   claimed: boolean
   huntName?: string
   attributes?: NftAttribute[]
+  /** ipfs:// URI pointing to the SEP-0039 metadata JSON file for this NFT. */
+  metadataUri?: string
 }
 
 export interface ProfileSummary {
