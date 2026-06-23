@@ -65,21 +65,19 @@ function normalizePayload(payload: HuntyQrPayload): ParsedQrPayload {
 
 function parseHuntyUrl(raw: string): ParsedQrPayload {
   try {
-    const withoutScheme = raw.replace(/^hunty:\/\//, 'https://');
-    const url = new URL(withoutScheme);
-    const segments = url.pathname.split('/').filter(Boolean);
-    const huntId = segments[1] ? Number(segments[1]) : undefined;
-    const clueId = segments[2] ? Number(segments[2]) : undefined;
-    const answerParam = url.searchParams.get('a') ?? url.searchParams.get('answer') ?? undefined;
-    const hashParam = url.searchParams.get('hash') ?? undefined;
+    const checkpointMatch = raw.match(/^hunty:\/\/checkpoint\/(\d+)\/(\d+)/i);
+    const huntId = checkpointMatch ? Number(checkpointMatch[1]) : undefined;
+    const clueId = checkpointMatch ? Number(checkpointMatch[2]) : undefined;
+
+    const queryIndex = raw.indexOf('?');
+    const query = queryIndex >= 0 ? raw.slice(queryIndex + 1) : '';
+    const params = new URLSearchParams(query);
+    const answerParam = params.get('a') ?? params.get('answer') ?? undefined;
+    const hashParam = params.get('hash') ?? undefined;
 
     let answer = answerParam ?? undefined;
     if (answerParam) {
-      try {
-        answer = decodeBase64Url(answerParam);
-      } catch {
-        answer = answerParam;
-      }
+      answer = decodeURIComponent(answerParam);
     }
 
     return normalizePayload({
