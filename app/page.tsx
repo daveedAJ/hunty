@@ -8,12 +8,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { X, ArrowRight, Trophy } from "lucide-react"
+import { X, ArrowRight, Trophy, Search } from "lucide-react"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Header } from "@/components/Header"
 import { getAllHunts, type StoredHunt } from "@/lib/huntStore"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
+import { EmptyState } from "@/components/EmptyState"
 import { HuntOfTheWeekBanner } from "@/components/HuntOfTheWeekBanner"
 import { hankenGrotesk } from "@/lib/font"
 import OnboardingTour from "@/components/OnboardingTour"
@@ -634,9 +635,20 @@ export default function GameArcade() {
               ))}
             </div>
           ) : filteredHunts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/50 py-10 text-center text-slate-600 dark:text-slate-400">
-              {searchQuery ? "No hunts match your search query." : "No active hunts available right now."}{" "}
-              {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
+            <div className="py-10">
+              <EmptyState
+                icon={<Search className="w-10 h-10 text-slate-500 dark:text-slate-400" />}
+                title={searchQuery ? "No hunts match your search" : "No hunts yet, create your first!"}
+                description={
+                  searchQuery
+                    ? "Try a different keyword or clear the search to see more hunts."
+                    : "There are no hunts available yet. Create a new hunt to get started."
+                }
+                action={{
+                  label: searchQuery ? "Clear search" : "Create your first hunt",
+                  href: searchQuery ? "/" : "/hunty",
+                }}
+              />
             </div>
           ) : (
             <VirtualizedActiveHuntsGrid hunts={filteredHunts} playerCounts={playerCounts} />
