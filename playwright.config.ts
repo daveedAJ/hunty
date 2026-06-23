@@ -23,6 +23,17 @@ export default defineConfig({
       name: "msedge",
       use: { ...devices["Desktop Edge"], channel: "msedge" },
     },
+    // ── Mobile Testing ──────────────────────────────────────────────
+    // Run same tests on iOS and Android to ensure responsive design
+    // and mobile user experience. Configured for CI efficiency.
+    {
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "Mobile Safari",
+      use: { ...devices["iPhone 12"] },
+    },
   ],
   webServer: {
     command: "pnpm dev",
