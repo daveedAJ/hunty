@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/Header";
+
+export const metadata: Metadata = {
+  title: "404 - Page Not Found | Hunty",
+  description: "The page or hunt you're looking for doesn't exist on Hunty.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function NotFound() {
   return (

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import HuntDetailClient from "./share";
 import { HuntCountdown } from "./HuntCountdown";
 import { FastestPlayersStrip } from "@/components/FastestPlayersStrip";
+import { StructuredData, huntStructuredData } from "@/components/StructuredData";
 
 export async function generateMetadata({
   params,
@@ -99,9 +100,13 @@ const page = async ({ params }: PageProps) => {
 
   const status = statusStyles[huntDetails.status] ?? statusStyles["upcoming"];
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://hunty.app"
+
   return (
     <div className="min-h-screen bg-[#0b0c10] text-white pb-24">
       
+      <StructuredData data={huntStructuredData(huntDetails, baseUrl)} />
+
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/3 w-150 h-100 bg-violet-700/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-100p h-75 bg-indigo-600/15 rounded-full blur-[100px]" />

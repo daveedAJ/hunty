@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  httpAgentOptions: {
+    keepAlive: true,
+  },
+
   images: {
+    formats: ["image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       // Pinata public gateway
       { protocol: "https", hostname: "gateway.pinata.cloud" },
@@ -105,6 +115,25 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "geolocation=(self), microphone=(), camera=()",
+          },
+        ],
+      },
+      {
+        source: "/:path*.(svg|png|jpg|jpeg|gif|webp|avif|ico|woff2|woff|ttf|otf)",
+        locale: false,
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
