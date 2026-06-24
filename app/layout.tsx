@@ -4,6 +4,7 @@ import "./globals.css"
 import { hankenGrotesk } from "@/lib/font"
 import { TxToaster } from "@/components/TxToaster"
 import Providers from "./providers"
+import ResponsiveShell from "@/components/ResponsiveShell"
 
 export const metadata: Metadata = {
   title: "Hunty - Decentralized Scavenger Hunt Game",
@@ -75,9 +76,9 @@ export default function RootLayout({
             Skip to content
           </a>
           <TxToaster />
-          <main id="main-content">
+          <ResponsiveShell>
             {children}
-          </main>
+          </ResponsiveShell>
         </Providers>
       </body>
     </html>
