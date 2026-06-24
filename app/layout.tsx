@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import "./globals.css"
 import { hankenGrotesk } from "@/lib/font"
 import { TxToaster } from "@/components/TxToaster"
-import { SrAnnouncer } from "@/components/SrAnnouncer"
+import { EnvironmentIndicator } from "@/components/EnvironmentIndicator"
 import Providers from "./providers"
 import { PageTransitionWrapper } from "@/components/PageTransitionWrapper"
 import { PageSkeleton } from "@/components/PageSkeleton"
@@ -79,14 +79,7 @@ export default function RootLayout({
             Skip to content
           </a>
           <TxToaster />
-          {/*
-           * The <main> tag is the animation boundary.
-           * PageTransitionWrapper lives inside Providers (client tree) so
-           * it can read pathname and run AnimatePresence.
-           * Suspense catches any async page segments and shows the skeleton
-           * while they stream in — the same skeleton is also visible during
-           * the brief window between route change and first paint.
-           */}
+          <EnvironmentIndicator />
           <main id="main-content">
             <Suspense fallback={<PageSkeleton />}>
               <PageTransitionWrapper>
