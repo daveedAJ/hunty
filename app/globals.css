@@ -182,6 +182,17 @@
   will-change: opacity, transform;
 }
 
+/* WCAG 2.1 AA focus indicators — visible on all focusable elements */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Ensure minimum 4.5:1 contrast for text in dark mode */
+.dark .text-muted-foreground {
+  color: hsl(0 0% 65%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* CSS-level safety net on top of the JS useReducedMotion hook.
      Framer Motion respects the hook, but this catches any edge cases

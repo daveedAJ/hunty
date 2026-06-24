@@ -3,7 +3,7 @@ import { HelpCircle } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="max-w-[1600px] mx-auto px-6 sm:px-14 py-8 mt-12 border-t border-slate-100 dark:border-white/5">
+    <footer aria-label="Site footer" className="max-w-[1600px] mx-auto px-6 sm:px-14 py-8 mt-12 border-t border-slate-100 dark:border-white/5">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 dark:text-slate-400">
         <div className="font-normal text-lg bg-gradient-to-br from-[#2F2FFF] to-[#E87785] bg-clip-text text-transparent">
           Hunty
