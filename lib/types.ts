@@ -18,6 +18,12 @@ export interface StoredHunt {
   rewardType: "XLM" | "NFT" | "Both"
   /** Total reward pool value used for creator-side sorting. */
   rewardPool?: number
+  /** Current available balance in the creator's reward pool (XLM). */
+  poolBalance?: number
+  /** Optional distribution plan for rewards (e.g., 1st/2nd/3rd place amounts). */
+  rewardDistribution?: Reward[]
+  /** Creator-configured low-balance threshold (XLM) to show warnings. */
+  poolLowBalanceThreshold?: number
   /** Creator-side participant count snapshot for dashboard sorting. */
   playerCount?: number
   /** Unix timestamp in seconds when the hunt draft was created locally. */

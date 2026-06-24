@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ActivateHuntModal } from "@/components/ActivateHuntModal"
+import { RewardPoolManager } from "@/components/RewardPoolManager"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import { deleteHunts, archiveHunts } from "@/lib/huntStore"
 import {
@@ -107,6 +108,7 @@ export function HuntDashboard({
   const [clueRows, setClueRows] = useState<ClueRow[]>([
     { id: 1, question: "", answer: "", points: 10 },
   ])
+  const [poolHuntId, setPoolHuntId] = useState<number | null>(null)
   const [isSavingClues, setIsSavingClues] = useState(false)
 
   const visibleHuntIds = hunts.map((hunt) => hunt.id)
@@ -461,7 +463,7 @@ export function HuntDashboard({
                       <span className="text-xs text-slate-500 dark:text-slate-400">
                         {hunt.cluesCount} {hunt.cluesCount === 1 ? "clue" : "clues"}
                       </span>
-                      <div className="flex gap-2">
+                    <div className="flex gap-2">
                         {isDraft && (
                           <Button
                             size="sm"
@@ -496,6 +498,17 @@ export function HuntDashboard({
                             Activate
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPoolHuntId(hunt.id)
+                          }}
+                          className="border-slate-200 text-slate-600"
+                        >
+                          Manage Pool
+                        </Button>
                       </div>
                     </div>
                     {isDraft && !hasClues && (
@@ -680,6 +693,10 @@ export function HuntDashboard({
           </div>
         </DialogContent>
       </Dialog>
+
+      {poolHuntId !== null && (
+        <RewardPoolManager huntId={poolHuntId} isOpen={poolHuntId !== null} onClose={() => setPoolHuntId(null)} />
+      )}
     </>
   )
 }
