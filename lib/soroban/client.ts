@@ -15,6 +15,8 @@ export const DEFAULT_RPC_URL = "https://rpc.futurenet.stellar.org";
  */
 export const DEFAULT_NETWORK_PASSPHRASE = "Test SDF Future Network ; October 2022";
 
+export const MAINNET_NETWORK_PASSPHRASE = "Public Global Stellar Network ; September 2015";
+
 /**
  * Retrieves the RPC URL from environment or uses the default.
  */

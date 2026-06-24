@@ -76,7 +76,8 @@ export function GameCompleteModal({
   const playerProgress = registrationStatus?.progressData ? {
     is_completed: registrationStatus.progressData.completed,
     reward_claimed: registrationStatus.progressData.reward_claimed,
-    hunt_id: huntId
+    hunt_id: huntId,
+    reward_amount: reward,
   } : undefined;
 
   useEffect(() => {
