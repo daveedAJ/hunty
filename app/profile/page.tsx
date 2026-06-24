@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { WalletContext, shortenAddress } from "@/lib/context/WalletContext"
 import { NftGallery } from "@/components/NftGallery"
 import { BadgeWall } from "@/components/BadgeWall"
+import { ProfilePageSkeleton } from "@/components/LoadingSkeletons"
 import type { NftRewardDetail } from "@/components/NftDetailModal"
 import { RewardHistorySection } from "@/components/RewardHistorySection"
 import { fetchPlayerRewardHistory } from "@/lib/rewardHistory"
@@ -315,6 +316,8 @@ export default function UserProfilePage() {
               Use the <span className="font-semibold">Connect Wallet</span> button in the header to get started.
             </p>
           </div>
+        ) : isLoading ? (
+          <ProfilePageSkeleton />
         ) : (
           <>
             <section aria-label="Player statistics" className="mt-6">
