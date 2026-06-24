@@ -36,9 +36,24 @@ jobs:
       - name: Run Vitest
         run: npm test
 
-  build:
+  mutation:
     runs-on: ubuntu-latest
     needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run mutation testing
+        run: npm run test:mutation
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, mutation]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -21,6 +21,10 @@
 /.next/
 /out/
 
+# mutation testing artifacts
+/mutation-report
+/.stryker-tmp
+
 # production
 /build
 
