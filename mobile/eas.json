@@ -1,51 +1,60 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 8.0.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
+      "runtimeVersion": "1.0.0-development",
       "env": {
         "APP_ENV": "development"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "remote"
       },
       "ios": {
         "simulator": true,
-        "buildConfiguration": "Debug"
+        "buildConfiguration": "Debug",
+        "credentialsSource": "remote"
       }
     },
     "preview": {
       "developmentClient": false,
       "distribution": "internal",
       "channel": "preview",
+      "runtimeVersion": "1.0.0-preview",
       "env": {
         "APP_ENV": "preview"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "remote"
       },
       "ios": {
         "simulator": false,
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
       }
     },
     "production": {
       "developmentClient": false,
       "distribution": "store",
       "channel": "production",
+      "runtimeVersion": "1.0.0",
       "env": {
         "APP_ENV": "production"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "credentialsSource": "remote"
       },
       "ios": {
         "simulator": false,
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
       }
     }
   },
