@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useState, type MouseEvent as ReactMouseEvent } from "react"
 import { Plus, Trash2, Trophy, Copy, X } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -108,6 +107,7 @@ export function HuntDashboard({
   const [clueRows, setClueRows] = useState<ClueRow[]>([
     { id: 1, question: "", answer: "", points: 10 },
   ])
+  const [poolHuntId, setPoolHuntId] = useState<number | null>(null)
   const [isSavingClues, setIsSavingClues] = useState(false)
 
   const visibleHuntIds = hunts.map((hunt) => hunt.id)
@@ -336,18 +336,18 @@ export function HuntDashboard({
         </div>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {hunts.length === 0 ? (
-        <div className="col-span-full">
-          <EmptyState
-            icon={<Plus className="w-10 h-10 text-slate-500 dark:text-slate-400" />}
-            title="No hunts yet, create your first!"
-            description="Publish your first hunt to start sharing challenges and rewards with players."
-            action={{ label: "Create a hunt", href: "/hunty" }}
-          />
+        <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center shadow-sm dark:border-white/10 dark:bg-slate-950/50">
+          <p className="text-lg font-semibold text-slate-900 dark:text-white">
+            No hunts found for this filter
+          </p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Try another status or sort option to explore your hunt history.
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {hunts.map((hunt) => {
+          hunts.map((hunt) => {
             const isDraft = hunt.status === "Draft"
             const isActive = hunt.status === "Active"
             const isCompleted = hunt.status === "Completed"
@@ -452,9 +452,10 @@ export function HuntDashboard({
                 </Link>
               </Card>
             )
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
+
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {filteredCount <= pageSize
@@ -625,6 +626,10 @@ export function HuntDashboard({
           </div>
         </DialogContent>
       </Dialog>
+
+      {poolHuntId !== null && (
+        <RewardPoolManager huntId={poolHuntId} isOpen={poolHuntId !== null} onClose={() => setPoolHuntId(null)} />
+      )}
     </>
   )
 }

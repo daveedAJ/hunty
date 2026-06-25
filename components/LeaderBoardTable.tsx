@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback, memo } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
+import { LeaderboardTableSkeleton } from "@/components/LoadingSkeletons"
 import { cn } from "@/lib/utils"
 import { get_hunt_leaderboard } from "@/lib/contracts/hunt"
 import { logger } from "@/lib/logger"
@@ -105,20 +105,7 @@ function LeaderboardTableComponent({ huntId, data: initialData, isLoading: initi
         </thead>
         <tbody>
           {(isLoading && data.length === 0) ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <tr key={`skeleton-${index}`} className="bg-white dark:bg-slate-900">
-                <td className="px-4 py-3 flex items-center justify-center gap-2 text-center border-r-2 border-[#808080] dark:border-slate-700 border-b-2">
-                  <Skeleton className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800" />
-                  <Skeleton className="w-4 h-5 bg-slate-200 dark:bg-slate-800" />
-                </td>
-                <td className="px-4 py-3 border-r-2 border-[#808080] dark:border-slate-700 border-b-2">
-                  <Skeleton className="w-1/2 h-5 bg-slate-200 dark:bg-slate-800" />
-                </td>
-                <td className="px-4 py-3 text-center border border-b-2 border-[#808080] dark:border-slate-700">
-                  <Skeleton className="w-8 h-5 mx-auto bg-slate-200 dark:bg-slate-800" />
-                </td>
-              </tr>
-            ))
+            <LeaderboardTableSkeleton />
           ) : (
             data.map((entry, index) => {
               // Requirement: Visually distinguish rank 1, 2, and 3
