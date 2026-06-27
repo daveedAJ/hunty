@@ -16,6 +16,18 @@ export function Footer() {
             <HelpCircle className="w-4 h-4" />
             Help & Troubleshooting
           </Link>
+          <Link
+            href="/privacy"
+            className="hover:text-[#3737A4] dark:hover:text-blue-300 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/terms"
+            className="hover:text-[#3737A4] dark:hover:text-blue-300 transition-colors"
+          >
+            Terms of Service
+          </Link>
         </div>
         <p>&copy; {new Date().getFullYear()} Hunty. All rights reserved.</p>
       </div>

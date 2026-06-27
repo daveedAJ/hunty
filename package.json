@@ -58,6 +58,8 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "supertest": "^6.3.4",
+    "node-mocks-http": "^1.12.1",
     "@axe-core/playwright": "^4.11.1",
     "@chromatic-com/storybook": "^5.2.1",
     "@eslint/eslintrc": "^3",

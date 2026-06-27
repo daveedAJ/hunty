@@ -75,7 +75,9 @@ export function NftGallery({ nfts }: NftGalleryProps) {
   if (nfts.length === 0) {
     return (
       <EmptyState
-        icon={<Trophy className="w-10 h-10 text-slate-500 dark:text-slate-400" />}
+        icon={
+          <Trophy className="w-10 h-10 text-slate-500 dark:text-slate-400" />
+        }
         title="Complete hunts to earn NFTs"
         description="Your NFT gallery is empty right now. Finish a scavenger hunt to unlock your first collectible reward."
         action={{ label: "Browse hunts", href: "/" }}
@@ -139,10 +141,18 @@ export function NftGallery({ nfts }: NftGalleryProps) {
         {displayedNfts.map((nft, idx) => (
           <motion.div
             key={nft.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05, duration: 0.4 }}
-            whileHover={{ y: -8, transition: { duration: 0.2 } }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+            animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { delay: idx * 0.05, duration: 0.4 }
+            }
+            whileHover={
+              prefersReducedMotion
+                ? undefined
+                : { y: -8, transition: { duration: 0.2 } }
+            }
             onClick={() => handleNftClick(nft)}
             className="cursor-pointer group"
           >
@@ -153,11 +163,13 @@ export function NftGallery({ nfts }: NftGalleryProps) {
               <CardContent className={cn("p-0", viewMode === "list" && "flex items-center p-4 w-full")}>
                 {/* Badge */}
                 <div className="absolute top-3 right-3 z-10">
-                  <div className={cn(
-                    "p-1.5 rounded-full",
-                    nft.claimed ? "bg-emerald-500" : "bg-amber-500",
-                    "shadow-lg shadow-emerald-500/20"
-                  )}>
+                  <div
+                    className={cn(
+                      "p-1.5 rounded-full",
+                      nft.claimed ? "bg-emerald-500" : "bg-amber-500",
+                      "shadow-lg shadow-emerald-500/20",
+                    )}
+                  >
                     <Star className="w-3 h-3 text-white fill-white" />
                   </div>
                 </div>

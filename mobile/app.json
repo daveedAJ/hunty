@@ -18,7 +18,7 @@
       "bundleIdentifier": "io.hunty.mobile",
       "buildNumber": "1",
       "associatedDomains": [
-        "applinks:hunty.io"
+        "applinks:hunty.app"
       ]
     },
     "android": {
@@ -53,7 +53,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "hunty.io",
+              "host": "hunty.app",
               "pathPrefix": "/hunt"
             }
           ]

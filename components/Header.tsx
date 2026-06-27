@@ -257,6 +257,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
               <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
             </div>
 
+            <LanguageSelector />
             <ThemeToggle />
 
             {/* Wallet */}
