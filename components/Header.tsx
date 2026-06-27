@@ -73,7 +73,114 @@ export function Header({ balance = "0" }: { balance?: string }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-slate-950/75 border-slate-200 dark:border-white/10 transition-all duration-200">
+      <header className="flex flex-row flex-wrap sm:flex-nowrap justify-between items-center py-4 sm:py-6 lg:py-8 px-4 max-w-[1600px] mx-auto pb-8 sm:pb-12 lg:pb-24 gap-4">
+        {/* Logo */}
+        <div className="font-normal text-xl sm:text-2xl md:text-3xl lg:text-4xl bg-gradient-to-br from-[#2F2FFF] to-[#E87785] bg-clip-text text-transparent flex-shrink-0">
+          Hunty
+        </div>
+
+        <div className="flex items-center gap-3">
+          <LanguageSelector />
+          <ThemeToggle />
+        </div>
+
+        {mounted && connected ? (
+          <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto flex-1 justify-between sm:justify-end">
+            {/* Balance pill */}
+            <div id="balance-pill" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full">
+              <Coin />
+              <span className="bg-gradient-to-br from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent text-xs sm:text-sm md:text-base lg:text-xl font-medium">
+                {balance}
+              </span>
+            </div>
+
+            {/* Wallet button + dropdown */}
+            <div className="relative flex-shrink-0" ref={dropdownRef}>
+              <Button
+                onClick={() => setDropdownOpen((prev) => !prev)}
+                className="border-2 border-transparent hover:opacity-80 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base lg:text-xl justify-center bg-white dark:bg-slate-900"
+                style={{
+                  background:
+                    "linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(to right, #0C0C4F, #4A4AFF) border-box",
+                }}
+              >
+                <div className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] flex-shrink-0" />
+                <span className="font-black bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text truncate max-w-[70px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-[200px]">
+                  {displayKey}
+                </span>
+                {/* Chevron indicator */}
+                <svg
+                  className={cn(
+                    "w-3 h-3 ml-1 text-[#3737A4] transition-transform duration-200",
+                    dropdownOpen && "rotate-180"
+                  )}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Button>
+
+              {/* Dropdown panel */}
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 shadow-xl z-50 overflow-hidden backdrop-blur-xl">
+                  {/* Header strip */}
+                  <div className="px-4 py-3 bg-gradient-to-r from-[#0C0C4F] to-[#4A4AFF]">
+                    <p className="text-xs text-blue-200 font-medium mb-1">
+                      Connected wallet
+                    </p>
+                    <p className="text-[11px] uppercase tracking-wide text-blue-200/90 mb-1">
+                      {walletProvider ?? "freighter"}
+                    </p>
+                    <p className="text-white font-mono text-xs break-all leading-relaxed">
+                      {publicKey}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="p-2 flex flex-col gap-1">
+                    <button
+                      onClick={handleCopy}
+                      aria-label="Copy wallet address"
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-left"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                      )}
+                      <span>{copied ? "Copied!" : "Copy address"}</span>
+                    </button>
+
+                    <div className="h-px bg-slate-100 dark:bg-white/5 mx-3" />
+
+                    <button
+                      onClick={handleDisconnect}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left font-medium"
+                    >
+                      <LogOut className="w-4 h-4 flex-shrink-0" />
+                      <span>Disconnect wallet</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Button
+            id="wallet-button"
+            onClick={() => setModalOpen(true)}
+            className="bg-[#0C0C4F] hover:bg-slate-700 text-white px-4 md:px-6 py-2 sm:py-3 rounded-xl text-sm md:text-xl font-black"
+          >
+            Connect Wallet
+          </Button>
+        )}
         <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16 md:h-18">
 
           {/* Logo */}
