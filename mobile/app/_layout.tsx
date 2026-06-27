@@ -226,6 +226,7 @@ function RootLayoutNav() {
         <Stack.Screen name="transaction/pending" options={{ title: 'Transaction Pending', animation: 'none' }} />
         <Stack.Screen name="details" options={{ title: 'Details', animation: 'none' }} />
         <Stack.Screen name="nested" options={{ title: 'Nested', animation: 'none' }} />
+        <Stack.Screen name="settings/notifications" options={{ title: 'Notification Preferences', animation: 'none' }} />
       </Stack>
       <MemoryDiagnosticsOverlay />
     </SafeAreaView>
