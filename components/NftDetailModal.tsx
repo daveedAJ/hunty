@@ -1,27 +1,20 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import {
-  Calendar,
-  Trophy,
-  Zap,
-  Share2,
-  Download,
-  ExternalLink,
-} from "lucide-react";
-import { resolveImageSrc } from "@/lib/ipfs";
-import { formatISOString } from "@/lib/dateUtils";
+import React from "react"
+import Image from "next/image"
+import { motion } from "framer-motion"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { Calendar, Trophy, Zap, Share2, Download, ExternalLink, Send } from "lucide-react"
+import { resolveImageSrc } from "@/lib/ipfs"
+import { formatISOString } from "@/lib/dateUtils"
 
 interface NftAttribute {
   trait_type: string;
@@ -42,14 +35,14 @@ export interface NftRewardDetail {
 }
 
 interface NftDetailModalProps {
-  nft: NftRewardDetail | null;
-  isOpen: boolean;
-  onClose: () => void;
+  nft: NftRewardDetail | null
+  isOpen: boolean
+  onClose: () => void
+  onTransfer?: (nft: NftRewardDetail) => void
 }
 
-export function NftDetailModal({ nft, isOpen, onClose }: NftDetailModalProps) {
-  if (!nft) return null;
-  const prefersReducedMotion = useReducedMotion();
+export function NftDetailModal({ nft, isOpen, onClose, onTransfer }: NftDetailModalProps) {
+  if (!nft) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -166,6 +159,16 @@ export function NftDetailModal({ nft, isOpen, onClose }: NftDetailModalProps) {
                 <Download className="w-4 h-4" />
                 Download Certificate
               </Button>
+              {onTransfer && nft.claimed && (
+                <Button
+                  variant="outline"
+                  className="w-full border-indigo-200 text-indigo-700 rounded-xl h-11 flex items-center justify-center gap-2 hover:bg-indigo-50"
+                  onClick={() => onTransfer(nft)}
+                >
+                  <Send className="w-4 h-4" />
+                  Transfer / Gift
+                </Button>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
