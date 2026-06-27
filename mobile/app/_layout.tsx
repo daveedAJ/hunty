@@ -116,10 +116,6 @@ function RootLayoutNav() {
   }, []);
 
   useEffect(() => {
-    const backAction = () => {
-      if (router.canGoBack()) {
-        router.back();
-        return true;
     if (!fontsLoaded && !fontError) return;
 
     let isMounted = true;
