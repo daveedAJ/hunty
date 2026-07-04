@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedInput, ThemedView } from '@components/themed';
 import { SettingsSection } from '@components/settings/SettingsSection';
 import { SettingsRow } from '@components/settings/SettingsRow';
+import { PinPromptModal } from '@components/PinPromptModal';
 import { useTheme } from '@providers/ThemeProvider';
-import { useToast } from '@providers/ToastProvider';
 import { useWalletSecurity } from '@providers/WalletSecurityProvider';
 
 export default function WalletSecurityScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { showToast } = useToast();
   const {
     initialized,
     biometricAvailable,
@@ -19,6 +18,8 @@ export default function WalletSecurityScreen() {
     biometricEnabled,
     pinSet,
     authError,
+    authenticate,
+    verifyPinCode,
     enableBiometrics,
     disableBiometrics,
     setPin,
@@ -33,19 +34,49 @@ export default function WalletSecurityScreen() {
   const [newPin, setNewPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [operationMessage, setOperationMessage] = useState<string | null>(null);
+  const [pinPromptVisible, setPinPromptVisible] = useState(false);
+  const [pendingSecurityAction, setPendingSecurityAction] = useState<(() => Promise<void>) | null>(null);
 
   const biometricLabel = biometricAvailable ? biometricType ?? 'Biometric authentication' : 'Biometric authentication is unavailable';
 
   const canSavePin = pin.length >= 4 && pin === confirmPin;
   const canChangePin = !!currentPin && newPin.length >= 4;
 
+  const runProtectedAction = async (action: () => Promise<void>, reason = 'Authorize wallet security change') => {
+    const auth = await authenticate(reason);
+    if (auth.authenticated) {
+      await action();
+      return true;
+    }
+
+    if (auth.requiresPin && pinSet) {
+      setPendingSecurityAction(() => action);
+      setPinPromptVisible(true);
+      return false;
+    }
+
+    Alert.alert('Authentication required', 'Complete wallet authentication to continue.');
+    return false;
+  };
+
   const handleToggleBiometrics = async () => {
     setIsSubmitting(true);
     try {
       if (biometricEnabled) {
-        await disableBiometrics();
+        await runProtectedAction(async () => {
+          await disableBiometrics();
+        }, 'Disable biometric authentication');
       } else {
-        await enableBiometrics();
+        const enabled = await runProtectedAction(async () => {
+          const success = await enableBiometrics();
+          if (!success) {
+            Alert.alert('Biometric setup', 'Biometric authentication could not be enabled.');
+          }
+        }, 'Enable biometric authentication');
+
+        if (!enabled) {
+          setOperationMessage('Biometric authentication could not be enabled.');
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -61,10 +92,17 @@ export default function WalletSecurityScreen() {
         return;
       }
 
-      const created = await setPin(pin);
-      if (created) {
-        setPinValue('');
-        setConfirmPin('');
+      const created = await runProtectedAction(async () => {
+        const success = await setPin(pin);
+        if (success) {
+          setPinValue('');
+          setConfirmPin('');
+          setOperationMessage('PIN saved securely.');
+        }
+      }, 'Create wallet PIN');
+
+      if (!created) {
+        setOperationMessage('Authentication is required to save the PIN.');
       }
     } finally {
       setIsSubmitting(false);
@@ -75,10 +113,17 @@ export default function WalletSecurityScreen() {
     setIsSubmitting(true);
     setOperationMessage(null);
     try {
-      const changed = await updatePin(currentPin, newPin);
-      if (changed) {
-        setCurrentPin('');
-        setNewPin('');
+      const changed = await runProtectedAction(async () => {
+        const success = await updatePin(currentPin, newPin);
+        if (success) {
+          setCurrentPin('');
+          setNewPin('');
+          setOperationMessage('PIN updated successfully.');
+        }
+      }, 'Change wallet PIN');
+
+      if (!changed) {
+        setOperationMessage('Authentication is required to change the PIN.');
       }
     } finally {
       setIsSubmitting(false);
@@ -89,10 +134,29 @@ export default function WalletSecurityScreen() {
     setIsSubmitting(true);
     setOperationMessage(null);
     try {
-      await removePin();
+      await runProtectedAction(async () => {
+        await removePin();
+      }, 'Remove wallet PIN');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePinSubmit = async (pinValue: string) => {
+    const verified = await verifyPinCode(pinValue);
+    if (!verified) {
+      return false;
+    }
+
+    const action = pendingSecurityAction;
+    setPendingSecurityAction(null);
+    setPinPromptVisible(false);
+
+    if (action) {
+      await action();
+    }
+
+    return true;
   };
 
   const description = useMemo(() => {
@@ -199,6 +263,17 @@ export default function WalletSecurityScreen() {
           <ThemedButton text="Back to Settings" variant="ghost" onPress={() => router.back()} fullWidth />
         </SettingsSection>
       </ScrollView>
+
+      <PinPromptModal
+        visible={pinPromptVisible}
+        title="Verify your PIN"
+        error={authError}
+        onCancel={() => {
+          setPinPromptVisible(false);
+          setPendingSecurityAction(null);
+        }}
+        onSubmit={handlePinSubmit}
+      />
     </ThemedView>
   );
 }

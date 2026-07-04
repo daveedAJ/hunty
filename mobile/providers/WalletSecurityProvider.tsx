@@ -32,8 +32,9 @@ export type WalletSecurityContextValue = {
   setPin: (pin: string) => Promise<boolean>;
   updatePin: (currentPin: string, newPin: string) => Promise<boolean>;
   removePin: () => Promise<void>;
-  authenticate: (reason?: string) => Promise<{ authenticated: boolean; requiresPin: boolean }>;
+  authenticate: (reason?: string) => Promise<{ authenticated: boolean; requiresPin: boolean; reason?: string }>;
   verifyPinCode: (pin: string) => Promise<boolean>;
+  requireAuthentication: (reason?: string) => Promise<boolean>;
   lock: () => void;
 };
 
@@ -152,11 +153,11 @@ export function WalletSecurityProvider({ children }: { children: React.ReactNode
     return false;
   };
 
-  const authenticate = async (reason = 'Confirm wallet action'): Promise<{ authenticated: boolean; requiresPin: boolean }> => {
+  const authenticate = async (reason = 'Confirm wallet action'): Promise<{ authenticated: boolean; requiresPin: boolean; reason?: string }> => {
     setAuthError(null);
 
     if (isAuthenticated) {
-      return { authenticated: true, requiresPin: false };
+      return { authenticated: true, requiresPin: false, reason: 'biometric_success' };
     }
 
     const result = await authenticateWithFallback(reason);
@@ -171,8 +172,15 @@ export function WalletSecurityProvider({ children }: { children: React.ReactNode
       return result;
     }
 
-    setAuthError('Authentication is required to continue.');
+    setAuthError(result.reason === 'biometrics_unavailable'
+      ? 'Biometric authentication is unavailable on this device.'
+      : 'Authentication is required to continue.');
     return result;
+  };
+
+  const requireAuthentication = async (reason?: string) => {
+    const authResult = await authenticate(reason);
+    return authResult.authenticated;
   };
 
   const lock = () => {
@@ -197,6 +205,7 @@ export function WalletSecurityProvider({ children }: { children: React.ReactNode
       removePin,
       authenticate,
       verifyPinCode,
+      requireAuthentication,
       lock,
     }),
     [

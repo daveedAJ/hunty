@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import SignClient from '@walletconnect/sign-client';
 import Constants from 'expo-constants';
 import { useWalletSecurity } from '@providers/WalletSecurityProvider';
+import { Alert } from 'react-native';
 import { useWalletStore } from '@store/useStore';
 import { saveSession, loadSession, clearSession } from '@services/walletSession';
 import { registerPushToken, unregisterPushToken } from '@services/notifications/tokenRegistry';
@@ -231,6 +232,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const auth = await authenticate('Authorize transaction');
       if (!auth.authenticated) {
+        Alert.alert('Authentication required', 'Please complete wallet authentication to approve this request.');
         throw new Error('Transaction authorization failed.');
       }
 

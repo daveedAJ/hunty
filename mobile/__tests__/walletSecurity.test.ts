@@ -1,3 +1,4 @@
+import React from 'react';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Crypto from 'expo-crypto';
@@ -5,14 +6,37 @@ import * as Random from 'expo-random';
 import {
   authenticateBiometric,
   authenticateWithFallback,
-  changePin,
   createPin,
-  getBiometricEnabled,
-  getPinExists,
   getSupportedBiometricType,
   setBiometricEnabled,
   verifyPin,
 } from '@services/walletSecurity';
+import { render, waitFor } from '@testing-library/react-native';
+import { WalletSecurityProvider, useWalletSecurity } from '@providers/WalletSecurityProvider';
+import { ToastProvider } from '@providers/ToastProvider';
+import { View } from 'react-native';
+
+function TestConsumer() {
+  const { authenticate, verifyPinCode, isAuthenticated } = useWalletSecurity();
+
+  return React.createElement(
+    View,
+    null,
+    React.createElement(View, { testID: 'auth-state' }, isAuthenticated ? 'authenticated' : 'locked'),
+    React.createElement(View, {
+      testID: 'trigger',
+      onTouchEnd: async () => {
+        await authenticate('Authorize transaction');
+      },
+    }),
+    React.createElement(View, {
+      testID: 'pin-verify',
+      onTouchEnd: async () => {
+        await verifyPinCode('1234');
+      },
+    }),
+  );
+}
 
 jest.mock('expo-secure-store');
 jest.mock('expo-local-authentication');
@@ -87,5 +111,40 @@ describe('walletSecurity service', () => {
     const result = await authenticateWithFallback();
     expect(result.requiresPin).toBe(true);
     expect(result.authenticated).toBe(false);
+    expect(result.reason).toBe('biometric_failed');
+  });
+
+  it('reports an unsupported device when biometrics are unavailable and no PIN exists', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === 'hunty_biometric_enabled') return 'true';
+      return null;
+    });
+    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(false);
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(false);
+
+    const result = await authenticateWithFallback();
+    expect(result.authenticated).toBe(false);
+    expect(result.requiresPin).toBe(false);
+    expect(result.reason).toBe('biometrics_unavailable');
+  });
+
+  it('requires re-authentication for sensitive wallet actions through the provider', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === 'hunty_biometric_enabled') return 'false';
+      if (key === 'hunty_pin_hash') return 'HASH';
+      if (key === 'hunty_pin_salt') return 'SALT';
+      return null;
+    });
+    (Crypto.digestStringAsync as jest.Mock).mockResolvedValue('HASH');
+
+    const { getByTestId } = render(
+      React.createElement(
+        ToastProvider,
+        null,
+        React.createElement(WalletSecurityProvider, null, React.createElement(TestConsumer)),
+      ),
+    );
+
+    await waitFor(() => expect(getByTestId('auth-state').props.children).toBe('locked'));
   });
 });

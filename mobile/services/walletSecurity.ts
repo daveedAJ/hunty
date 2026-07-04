@@ -2,8 +2,10 @@ import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Crypto from 'expo-crypto';
 import * as Random from 'expo-random';
+import { Platform } from 'react-native';
 
 export type BiometricTypeName = 'Face ID' | 'Touch ID' | 'Face Unlock' | 'Fingerprint' | null;
+export type WalletAuthReason = 'biometric_success' | 'biometric_failed' | 'pin_required' | 'biometrics_unavailable' | 'authentication_failed';
 
 const BIOMETRIC_ENABLED_KEY = 'hunty_biometric_enabled';
 const BIOMETRIC_TYPE_KEY = 'hunty_biometric_type';
@@ -13,7 +15,7 @@ const PIN_SALT_KEY = 'hunty_pin_salt';
 export type WalletAuthResult = {
   authenticated: boolean;
   requiresPin: boolean;
-  reason?: string;
+  reason?: WalletAuthReason;
 };
 
 const PIN_MIN_LENGTH = 4;
@@ -28,6 +30,18 @@ function toHex(bytes: Uint8Array): string {
     .join('');
 }
 
+async function setSecureItem(key: string, value: string): Promise<void> {
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function getSecureItem(key: string): Promise<string | null> {
+  return SecureStore.getItemAsync(key);
+}
+
+async function removeSecureItem(key: string): Promise<void> {
+  await SecureStore.deleteItemAsync(key);
+}
+
 export async function getSupportedBiometricType(): Promise<BiometricTypeName> {
   const hasHardware = await LocalAuthentication.hasHardwareAsync();
   const isEnrolled = await LocalAuthentication.isEnrolledAsync();
@@ -38,7 +52,7 @@ export async function getSupportedBiometricType(): Promise<BiometricTypeName> {
   const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
 
   if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-    return 'Face ID';
+    return Platform.OS === 'ios' ? 'Face ID' : 'Face Unlock';
   }
 
   if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
@@ -56,40 +70,46 @@ export async function authenticateBiometric(promptMessage = 'Unlock Hunty Wallet
   const isAvailable = await isBiometricAvailable();
   if (!isAvailable) return false;
 
-  const result = await LocalAuthentication.authenticateAsync({
-    promptMessage,
-    cancelLabel: 'Cancel',
-    disableDeviceFallback: true,
-  });
+  try {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      cancelLabel: 'Cancel',
+      disableDeviceFallback: true,
+    });
 
-  return result.success;
+    return result.success;
+  } catch {
+    return false;
+  }
 }
 
 export async function setBiometricEnabled(enabled: boolean): Promise<void> {
-  await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, enabled ? 'true' : 'false');
+  await setSecureItem(BIOMETRIC_ENABLED_KEY, enabled ? 'true' : 'false');
 
   if (enabled) {
     const currentType = await getSupportedBiometricType();
     if (currentType) {
-      await SecureStore.setItemAsync(BIOMETRIC_TYPE_KEY, currentType);
+      await setSecureItem(BIOMETRIC_TYPE_KEY, currentType);
+    } else {
+      await removeSecureItem(BIOMETRIC_TYPE_KEY);
     }
   } else {
-    await SecureStore.deleteItemAsync(BIOMETRIC_TYPE_KEY);
+    await removeSecureItem(BIOMETRIC_TYPE_KEY);
   }
 }
 
 export async function getBiometricEnabled(): Promise<boolean> {
-  const value = await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY);
+  const value = await getSecureItem(BIOMETRIC_ENABLED_KEY);
   return normalizeBoolean(value);
 }
 
 export async function getStoredBiometricType(): Promise<BiometricTypeName> {
-  const stored = await SecureStore.getItemAsync(BIOMETRIC_TYPE_KEY);
+  const stored = await getSecureItem(BIOMETRIC_TYPE_KEY);
   return stored ? (stored as BiometricTypeName) : null;
 }
 
 export async function createPin(pin: string): Promise<boolean> {
-  if (typeof pin !== 'string' || pin.length < PIN_MIN_LENGTH) {
+  if (typeof pin !== 'string' || !/^\d+$/.test(pin) || pin.length < PIN_MIN_LENGTH) {
     return false;
   }
 
@@ -101,8 +121,8 @@ export async function createPin(pin: string): Promise<boolean> {
     { encoding: Crypto.CryptoEncoding.HEX },
   );
 
-  await SecureStore.setItemAsync(PIN_SALT_KEY, salt);
-  await SecureStore.setItemAsync(PIN_HASH_KEY, hash);
+  await setSecureItem(PIN_SALT_KEY, salt);
+  await setSecureItem(PIN_HASH_KEY, hash);
   return true;
 }
 
@@ -113,18 +133,18 @@ export async function changePin(currentPin: string, newPin: string): Promise<boo
 }
 
 export async function clearPin(): Promise<void> {
-  await SecureStore.deleteItemAsync(PIN_SALT_KEY);
-  await SecureStore.deleteItemAsync(PIN_HASH_KEY);
+  await removeSecureItem(PIN_SALT_KEY);
+  await removeSecureItem(PIN_HASH_KEY);
 }
 
 export async function getPinExists(): Promise<boolean> {
-  const hash = await SecureStore.getItemAsync(PIN_HASH_KEY);
+  const hash = await getSecureItem(PIN_HASH_KEY);
   return Boolean(hash);
 }
 
 export async function verifyPin(pin: string): Promise<boolean> {
-  const salt = await SecureStore.getItemAsync(PIN_SALT_KEY);
-  const storedHash = await SecureStore.getItemAsync(PIN_HASH_KEY);
+  const salt = await getSecureItem(PIN_SALT_KEY);
+  const storedHash = await getSecureItem(PIN_HASH_KEY);
   if (!salt || !storedHash) return false;
 
   const hash = await Crypto.digestStringAsync(
@@ -144,17 +164,21 @@ export async function authenticateWithFallback(promptMessage = 'Unlock Hunty Wal
   if (biometricEnabled && biometricAvailable) {
     const success = await authenticateBiometric(promptMessage);
     if (success) {
-      return { authenticated: true, requiresPin: false };
+      return { authenticated: true, requiresPin: false, reason: 'biometric_success' };
     }
 
-    return { authenticated: false, requiresPin: pinExists };
+    return {
+      authenticated: false,
+      requiresPin: pinExists,
+      reason: pinExists ? 'biometric_failed' : 'authentication_failed',
+    };
   }
 
   if (pinExists) {
-    return { authenticated: false, requiresPin: true };
+    return { authenticated: false, requiresPin: true, reason: 'pin_required' };
   }
 
-  return { authenticated: false, requiresPin: false };
+  return { authenticated: false, requiresPin: false, reason: 'biometrics_unavailable' };
 }
 
 export async function getBiometricStatus(): Promise<{ available: boolean; enabled: boolean; type: BiometricTypeName }> {
@@ -162,4 +186,16 @@ export async function getBiometricStatus(): Promise<{ available: boolean; enable
   const enabled = await getBiometricEnabled();
   const type = available ? await getSupportedBiometricType() : null;
   return { available, enabled, type };
+}
+
+export async function storeWalletSecret(key: string, value: string): Promise<void> {
+  await setSecureItem(key, value);
+}
+
+export async function readWalletSecret(key: string): Promise<string | null> {
+  return getSecureItem(key);
+}
+
+export async function removeWalletSecret(key: string): Promise<void> {
+  await removeSecureItem(key);
 }
