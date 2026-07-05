@@ -13,10 +13,10 @@ import { Card } from "@/components/ui/card";
 export default function GalleryPage() {
   const { address, nfts, loading, error } = usePlayerNfts();
   const [selectedNft, setSelectedNft] = useState<null | typeof nfts[0]>(null);
-  const [view, setView] = useState<"grid" | "list">("grid"));
+  const [view, setView] = useState<"grid" | "list">("grid");
   const [huntFilter, setHuntFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ start?: string; end?: string }>({});
-  const [sort, setSort] = useState<"newest" | "rarest">("newest"));
+  const [sort, setSort] = useState<"newest" | "rarest">("newest");
 
   const filtered = nfts
     .filter((n) => (huntFilter && huntFilter !== "All" ? n.huntName === huntFilter : true))

@@ -22,7 +22,7 @@ interface NftGalleryProps {
 }
 
 type ViewMode = "grid" | "list";
-type SortOption = "newest" | "rarest";
+type SortOption = "newest" | "rarest" | "alphabetical";
 
 export function NftGallery({ nfts }: NftGalleryProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -61,8 +61,10 @@ export function NftGallery({ nfts }: NftGalleryProps) {
     }
     if (sortOption === "newest") {
       list.sort((a, b) => new Date(b.earnedAt).valueOf() - new Date(a.earnedAt).valueOf());
-    } else {
+    } else if (sortOption === "rarest") {
       list.sort((a, b) => rarityRank(b) - rarityRank(a));
+    } else if (sortOption === "alphabetical") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
     }
     return list;
   }, [nfts, selectedHunt, dateFilter, sortOption]);
@@ -125,12 +127,13 @@ export function NftGallery({ nfts }: NftGalleryProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                Sort: {sortOption === "newest" ? "Newest" : "Rarest"}
+                Sort: {sortOption === "newest" ? "Newest" : sortOption === "rarest" ? "Rarest" : "Alphabetical"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-40">
               <DropdownMenuItem onClick={() => setSortOption("newest")}>Newest</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption("rarest")}>Rarest</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("alphabetical")}>Alphabetical</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
