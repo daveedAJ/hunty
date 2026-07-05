@@ -96,6 +96,10 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
+            key: cspHeaderName,
+            value: cspHeader,
+          },
+          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },

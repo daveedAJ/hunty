@@ -481,7 +481,7 @@ export async function registerPlayer(
       // Load account state
       let account
       try {
-        account = await server.getAccount(publicKey)
+        account = await server.getAccount(publicKey) as any
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : ""
         if (errorMessage.includes("not found") || errorMessage.includes("404")) {

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { headers } from "next/server"
 import { Suspense } from "react"
 
 import "./globals.css"
@@ -8,8 +9,6 @@ import { PageSkeleton } from "@/components/PageSkeleton"
 import { PageTransitionWrapper } from "@/components/PageTransitionWrapper"
 import Providers from "./providers"
 import PWAInstallPrompt from "@/components/PWAInstallPrompt"
-import { PageSkeleton } from "@/components/PageSkeleton"
-import { PageTransitionWrapper } from "@/components/PageTransitionWrapper"
 
 export const viewport: Viewport = {
   themeColor: "#7c3aed",
@@ -74,6 +73,9 @@ export default async function RootLayout({
   const headersList = await headers()
   const nonce = headersList.get("x-nonce") || undefined
 
+  // Generate a CSRF token for the session
+  const csrfToken = Buffer.from(crypto.randomUUID()).toString("base64")
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -88,6 +90,8 @@ export default async function RootLayout({
             `,
           }}
         />
+        {/* CSRF token meta tag for security tests and form protection */}
+        <meta name="csrf-token" content="${csrfToken}" />
         {/* Apple splash screen meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

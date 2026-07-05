@@ -1,4 +1,4 @@
-import Server, { TransactionBuilder, Operation, Account } from "@stellar/stellar-sdk"
+import Server, { TransactionBuilder, Operation } from "@stellar/stellar-sdk"
 import { getHunt as getStoredHunt, getHuntClues } from "@/lib/huntStore"
 import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
 import { normalizeNetworkError, AnswerIncorrectError } from "./errors"
@@ -55,7 +55,7 @@ export async function createHunt(
   const publicKey = await wallet.getPublicKey()
 
   // Load account state
-  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
+  const account = await withSorobanRpcRetry(() => server.getAccount(publicKey)) as any
 
   // Use manageData to carry the payload. In production you'd call the
   // Soroban contract (invoke host function) — this is a minimal signing flow
@@ -95,7 +95,7 @@ export async function activateHunt(huntId: number): Promise<ActivateHuntResult> 
   const wallet = getActiveWalletAdapter()
   const publicKey = await wallet.getPublicKey()
 
-  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
+  const account = await withSorobanRpcRetry(() => server.getAccount(publicKey)) as any
   const payload = JSON.stringify({ action: "activate_hunt", hunt_id: huntId })
   const key = `activate_hunt:${Date.now()}`
   const op = Operation.manageData({ name: key, value: payload })
@@ -142,7 +142,7 @@ export async function addClue(
   // stored as-is (legacy behaviour).
   const normalizedAnswer = answer
 
-  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
+  const account = await withSorobanRpcRetry(() => server.getAccount(publicKey)) as any
   const payload = JSON.stringify({
     action: "add_clue",
     hunt_id: huntId,
@@ -187,7 +187,7 @@ export async function extendEndTime(
   const wallet = getActiveWalletAdapter()
   const publicKey = await wallet.getPublicKey()
 
-  const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
+  const account = await withSorobanRpcRetry(() => server.getAccount(publicKey)) as any
   const payload = JSON.stringify({
     action: "extend_end_time",
     hunt_id: huntId,

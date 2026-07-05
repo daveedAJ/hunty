@@ -23,12 +23,17 @@ export default defineConfig({
   projects: [
     // ── Desktop ──────────────────────────────────────────────────────────────
     {
-      name: "chromium-desktop",
+      name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      // Only run visual regression tests in this project by default; other
-      // specs use msedge locally and chromium in CI.
     },
-    // Local-only: Edge (skip in CI where it is unavailable on ubuntu)
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
     ...(!process.env.CI
       ? [
           {
@@ -38,14 +43,6 @@ export default defineConfig({
         ]
       : []),
     // ── Mobile ───────────────────────────────────────────────────────────────
-    {
-      name: "mobile-chrome",
-      use: { ...devices["Pixel 5"] },
-    },
-    {
-      name: "mobile-safari",
-      use: { ...devices["iPhone 13"] },
-    },
     {
       name: "iphone",
       use: { ...devices["iPhone 13"] },

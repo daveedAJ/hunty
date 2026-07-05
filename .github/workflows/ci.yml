@@ -19,10 +19,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run ESLint
         run: pnpm lint
@@ -42,14 +47,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-  mutation:
       - name: Run Vitest with coverage
-        run: npm run test:coverage
+        run: pnpm test:coverage
 
       - name: Upload coverage report artifact
         uses: actions/upload-artifact@v4
@@ -67,9 +76,8 @@ jobs:
           name: codecov-umbrella
         continue-on-error: true
 
-  # Build verification - runs in parallel with lint and test
-  build:
-    name: Build Verification
+  mutation:
+    name: Mutation Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -79,29 +87,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
       - name: Run mutation testing
-        run: npm run test:mutation
+        run: pnpm test:mutation
 
   build:
+    name: Build Verification
     runs-on: ubuntu-latest
     needs: [test, mutation]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install dependencies
-        run: npm ci
-      - name: Build Next.js app
+        run: pnpm install --frozen-lockfile
 
       - name: Build Next.js application
-        run: npm run build
+        run: pnpm build
 
   # E2E tests - runs on PR and push
   e2e:
@@ -115,16 +137,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: pnpm exec playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npm run test:e2e
+        run: pnpm test:e2e
         continue-on-error: true
 
       - name: Upload Playwright report

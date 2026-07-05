@@ -32,7 +32,6 @@ export type RewardEscrow = {
 const ESCROW_KEY = "hunty_reward_escrows"
 const CLAIM_TIMEOUT_MS = 120_000
 const MAX_RETRIES = 2
-const ESCROW_KEY = "hunty_reward_escrows"
 
 export class ClaimTimeoutError extends Error {
   constructor() {
@@ -88,7 +87,7 @@ async function submitRewardReceipt(action: string, payload: Record<string, unkno
   const wallet = getActiveWalletAdapter()
   const publicKey = await wallet.getPublicKey()
   const server = new Server(SOROBAN_RPC_URL)
-  const account = await server.getAccount(publicKey)
+  const account = await server.getAccount(publicKey) as any
 
   const tx = new TransactionBuilder(account, {
     fee: "100",
@@ -124,7 +123,7 @@ async function claimRewardInternal(huntId: number, signal?: AbortSignal): Promis
   const publicKey = await wallet.getPublicKey()
   const recipient = publicKey
   const server = new Server(SOROBAN_RPC_URL)
-  const account = await server.getAccount(publicKey)
+  const account = await server.getAccount(publicKey) as any
 
   const action = "claim_reward"
   const payload = { huntId }
@@ -147,127 +146,29 @@ async function claimRewardInternal(huntId: number, signal?: AbortSignal): Promis
     .build()
 
   const signedXdr = await wallet.signTransaction(tx.toXDR())
+  const result = await server.submitTransaction(signedXdr)
+  if (!result?.hash) throw new Error("Reward claim transaction failed")
 
-export function getRewardEscrow(huntId: number): RewardEscrow | null {
-  return readEscrows().find((escrow) => escrow.huntId === huntId) ?? null
-}
-
-export function getRewardHistory(huntId: number): RewardReceipt[] {
-  const escrow = getRewardEscrow(huntId)
-  if (!escrow) return []
-  return [
-    {
-      id: `deposit_${huntId}`,
-      huntId,
-      type: "deposit",
-      txHash: escrow.depositTxHash,
-      amount: escrow.totalPool,
-      from: escrow.creator,
-      createdAt: escrow.createdAt,
-    },
-    ...escrow.distributions,
-    ...escrow.refunds,
-  ].sort((a, b) => b.createdAt - a.createdAt)
-}
-
-export async function createRewardEscrow(input: {
-  huntId: number
-  creator?: string
-  rewardType: "XLM" | "NFT" | "Both"
-  rewards: Reward[]
-  expiresAt: number
-}): Promise<RewardEscrow | null> {
-  if (input.rewardType === "NFT") return null
-
-  const totalPool = input.rewards.reduce((sum, reward) => sum + reward.amount, 0)
-  if (totalPool <= 0) throw new Error("Reward pool must be greater than 0")
-
-  const txHash = await submitRewardReceipt("deposit_reward_pool", {
-    huntId: input.huntId,
-    creator: input.creator,
-    totalPool,
-    rewards: input.rewards.map(({ place, amount }) => ({ place, amount })),
-    expiresAt: input.expiresAt,
-  })
-
-  const wallet = getActiveWalletAdapter()
-  const creator = input.creator || (await wallet.getPublicKey())
-  const escrow: RewardEscrow = {
-    huntId: input.huntId,
-    creator,
-    rewardType: input.rewardType,
-    totalPool,
-    balance: totalPool,
-    rewards: input.rewards,
-    expiresAt: input.expiresAt,
-    depositTxHash: txHash,
-    createdAt: Date.now(),
-    distributions: [],
-    refunds: [],
-  }
-  saveEscrow(escrow)
-  return escrow
-}
-
-function getRewardForRank(escrow: RewardEscrow, rank: number): number {
-  const explicit = escrow.rewards.find((reward) => reward.place === rank)
-  if (explicit) return Math.min(explicit.amount, escrow.balance)
-
-  const remainingSlots = Math.max(escrow.rewards.length - escrow.distributions.length, 1)
-  return Math.floor((escrow.balance / remainingSlots) * 10_000_000) / 10_000_000
-}
-
-export async function distributeCompletionReward(
-  huntId: number,
-  playerAddress?: string
-): Promise<ClaimRewardResult | null> {
-  const hunt = getHunt(String(huntId))
-  if (hunt?.rewardType === "NFT") return null
-
-  const escrow = getRewardEscrow(huntId)
-  if (!escrow || escrow.balance <= 0) return null
-
-  const wallet = getActiveWalletAdapter()
-  const recipient = playerAddress || (await wallet.getPublicKey())
-
-  const existing = escrow.distributions.find((receipt) => receipt.to === recipient)
-  if (existing) {
-    return { txHash: existing.txHash, amount: existing.amount, receipt: existing }
-  }
-
-  const rank = escrow.distributions.length + 1
-  const amount = getRewardForRank(escrow, rank)
-  if (amount <= 0) throw new Error("No reward available for this rank")
-
-  const txHash = await submitRewardReceipt("distribute_reward", {
-    huntId,
-    player: recipient,
-    rank,
-    amount,
-  })
-
+  const amount = escrow.balance
   const receipt: RewardReceipt = {
-    id: receiptId("distribution", huntId),
+    id: receiptId("claim", huntId),
     huntId,
-    type: "distribution",
-    txHash,
+    type: "claim",
+    txHash: result.hash,
     amount,
     from: escrow.creator,
     to: recipient,
-    rank,
     createdAt: Date.now(),
   }
 
   const next: RewardEscrow = {
     ...escrow,
-    balance: Math.max(0, escrow.balance - amount),
+    balance: 0,
     distributions: [...escrow.distributions, receipt],
   }
   saveEscrow(next)
-  localStorage.setItem(`hunt_reward_claimed_${huntId}`, "true")
-  localStorage.setItem(`hunt_reward_receipt_${huntId}_${recipient}`, JSON.stringify(receipt))
 
-  return { txHash, amount, receipt }
+  return { txHash: result.hash, amount, receipt }
 }
 
 export function getRewardEscrow(huntId: number): RewardEscrow | null {
@@ -277,19 +178,16 @@ export function getRewardEscrow(huntId: number): RewardEscrow | null {
 export function getRewardHistory(huntId: number): RewardReceipt[] {
   const escrow = getRewardEscrow(huntId)
   if (!escrow) return []
-  return [
-    {
-      id: `deposit_${huntId}`,
-      huntId,
-      type: "deposit",
-      txHash: escrow.depositTxHash,
-      amount: escrow.totalPool,
-      from: escrow.creator,
-      createdAt: escrow.createdAt,
-    },
-    ...escrow.distributions,
-    ...escrow.refunds,
-  ].sort((a, b) => b.createdAt - a.createdAt)
+  const deposit: RewardReceipt = {
+    id: `deposit_${huntId}`,
+    huntId,
+    type: "deposit",
+    txHash: escrow.depositTxHash,
+    amount: escrow.totalPool,
+    from: escrow.creator,
+    createdAt: escrow.createdAt,
+  }
+  return [deposit, ...escrow.distributions, ...escrow.refunds].sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export async function createRewardEscrow(input: {
