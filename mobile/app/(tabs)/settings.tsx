@@ -1,101 +1,111 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
-import { useHaptics } from '@hooks/useHaptics';
+import { SettingsSection } from '@components/settings/SettingsSection';
+import { SettingsRow } from '@components/settings/SettingsRow';
 import { useTheme } from '@providers/ThemeProvider';
 import { useToast } from '@providers/ToastProvider';
-import { getAllHunts } from '@store/huntStore';
-import { usePlayerStore, useWalletStore } from '@store/useStore';
-import type { StoredHunt } from '@lib/types';
+import { useWalletStore } from '@store/useStore';
+import { useWalletSecurity } from '@providers/WalletSecurityProvider';
 
-function rewardLabel(hunt: StoredHunt) {
-  if (hunt.rewardType === 'Both') return '100 XLM + NFT';
-  if (hunt.rewardType === 'NFT') return 'Exclusive reward NFT';
-  return '250 XLM';
-}
-
-export default function HuntsScreen() {
+export default function SettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const haptics = useHaptics();
   const { showToast } = useToast();
-  const { network } = useWalletStore();
-  const { currentProgress, setProgress } = usePlayerStore();
-  const [hunts, setHunts] = useState<StoredHunt[]>([]);
-  const [loadingHuntId, setLoadingHuntId] = useState<number | null>(null);
+  const { network, walletAddress, isConnected, clearWallet } = useWalletStore();
+  const { biometricAvailable, biometricEnabled, pinSet, isAuthenticated, lock } = useWalletSecurity();
 
-  useEffect(() => {
-    getAllHunts()
-      .then((data) => setHunts(data.filter((hunt) => hunt.status === 'Active')))
-      .catch(() => setHunts([]));
-  }, []);
+  const walletStatus = useMemo(() => {
+    if (!isConnected) return 'Not connected';
+    if (network === 'mainnet') return 'Mainnet';
+    return 'Testnet';
+  }, [isConnected, network]);
 
-  const stats = useMemo(
-    () => [
-      { value: String(hunts.length), label: 'Active Hunts', color: 'primary' as const },
-      { value: '350+', label: 'XLM Pooled', color: 'secondary' as const },
-      { value: '1.2k', label: 'Active Players', color: 'success' as const },
-    ],
-    [hunts.length],
-  );
+  const handleDisconnect = async () => {
+    await clearWallet();
+    showToast({ message: 'Wallet disconnected.', type: 'info' });
+    router.back();
+  };
 
-  const handleJoinHunt = (hunt: StoredHunt) => {
-    if (loadingHuntId !== null) return;
-
-    if (network === 'mainnet') {
-      showToast({ message: 'Switch wallet to Stellar Testnet to join hunts.', type: 'warning' });
-      router.push('/network/switch');
-      return;
-    }
-
-    setLoadingHuntId(hunt.id);
-    setProgress({
-      hunt_id: hunt.id,
-      player: 'GD72...3W9A',
-      current_clue_index: 0,
-      completed: false,
-      reward_claimed: false,
-    });
-
-    router.push({
-      pathname: '/transaction/pending',
-      params: {
-        action: 'join',
-        huntId: String(hunt.id),
-        huntTitle: hunt.title,
-      },
-    });
-    setLoadingHuntId(null);
+  const handleLockWallet = () => {
+    lock();
+    showToast({ message: 'Wallet locked.', type: 'info' });
   };
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedCustomText variant="h1" color="primary" weight="800">
-            Game Arcade
-          </ThemedCustomText>
-          <ThemedCustomText variant="body" color="text" style={styles.subtitle}>
-            Embark on real-world treasure hunts, solve clues, and claim crypto rewards.
-          </ThemedCustomText>
-        </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ThemedCustomText variant="h2" weight="800">
+          Settings
+        </ThemedCustomText>
+        <ThemedCustomText variant="body" style={styles.subtitle}>
+          Manage your app preferences and wallet security.
+        </ThemedCustomText>
 
-        <View style={[styles.statsBoard, { backgroundColor: colors.border + '30', borderColor: colors.border }]}>
-          {stats.map((stat, index) => (
-            <View key={stat.label} style={styles.statGroup}>
-              {index > 0 ? <View style={[styles.statDivider, { backgroundColor: colors.border }]} /> : null}
-              <View style={styles.statItem}>
-                <ThemedCustomText variant="h2" color={stat.color} weight="700">
-                  {stat.value}
-                </ThemedCustomText>
-                <ThemedCustomText variant="caption" color="text" style={styles.statLabel}>
-                  {stat.label}
-                </ThemedCustomText>
-              </View>
+        <SettingsSection title="Wallet">
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            label="Wallet Security"
+            description="Protect wallet actions with biometrics and PIN fallback"
+            type="navigate"
+            onPress={() => router.push('/settings/wallet')}
+          />
+          <SettingsRow
+            icon="log-out-outline"
+            label="Disconnect Wallet"
+            description="Sign out and unlink this device"
+            type="destructive"
+            onPress={handleDisconnect}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Security Status">
+          <View style={[styles.statusCard, { backgroundColor: colors.border + '20', borderColor: colors.border }]}>
+            <View style={styles.statusRow}>
+              <ThemedCustomText variant="caption" color="text">
+                Connection
+              </ThemedCustomText>
+              <ThemedCustomText variant="caption" weight="600" color={isConnected ? 'success' : 'error'}>
+                {walletStatus}
+              </ThemedCustomText>
             </View>
-          ))}
-        </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statusRow}>
+              <ThemedCustomText variant="caption" color="text">
+                Biometric Auth
+              </ThemedCustomText>
+              <ThemedCustomText variant="caption" weight="600" color={biometricEnabled ? 'success' : 'text'}>
+                {biometricEnabled ? 'Enabled' : 'Disabled'}
+              </ThemedCustomText>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statusRow}>
+              <ThemedCustomText variant="caption" color="text">
+                PIN Fallback
+              </ThemedCustomText>
+              <ThemedCustomText variant="caption" weight="600" color={pinSet ? 'success' : 'text'}>
+                {pinSet ? 'Set' : 'Not set'}
+              </ThemedCustomText>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statusRow}>
+              <ThemedCustomText variant="caption" color="text">
+                Session
+              </ThemedCustomText>
+              <ThemedCustomText variant="caption" weight="600" color={isAuthenticated ? 'success' : 'warning'}>
+                {isAuthenticated ? 'Active' : 'Locked'}
+              </ThemedCustomText>
+            </View>
+          </View>
+          <ThemedButton
+            text="Lock Wallet Now"
+            variant="ghost"
+            onPress={handleLockWallet}
+            fullWidth
+            disabled={!isAuthenticated}
+          />
+        </SettingsSection>
 
         <SettingsSection title="Appearance">
           <SettingsRow
@@ -112,26 +122,8 @@ export default function HuntsScreen() {
             icon="notifications-outline"
             label="Push Notifications"
             description="Job alerts, messages, and updates"
-            type="toggle"
-            value={notificationsEnabled}
-            onToggle={toggleNotifications}
-          />
-        </SettingsSection>
-
-        <SettingsSection title="Wallet">
-          <SettingsRow
-            icon="shield-checkmark-outline"
-            label="Wallet Security"
-            description="Protect wallet actions with biometrics and PIN fallback"
             type="navigate"
-            onPress={() => router.push('/settings/wallet')}
-          />
-          <SettingsRow
-            icon="log-out-outline"
-            label="Disconnect Wallet"
-            description="Sign out and unlink this device"
-            type="destructive"
-            onPress={() => setShowDisconnect(true)}
+            onPress={() => router.push('/settings/notifications')}
           />
         </SettingsSection>
 
@@ -140,95 +132,19 @@ export default function HuntsScreen() {
             icon="document-text-outline"
             label="Documentation"
             type="link"
-            onPress={() => Linking.openURL('https://docs.hunty.com')}
+            onPress={() => router.push('/help')}
           />
           <SettingsRow
             icon="help-circle-outline"
             label="Help Center"
             type="link"
-            onPress={() => Linking.openURL('https://support.hunty.com')}
+            onPress={() => router.push('/help')}
           />
         </SettingsSection>
 
         <ThemedCustomText variant="caption" style={[styles.version, { color: colors.border }]}>
           Hunty v1.0.0 development build
         </ThemedCustomText>
-
-        <View style={styles.listContainer}>
-          {hunts.map((hunt) => {
-            const isCurrent = currentProgress?.hunt_id === hunt.id;
-            const isLoading = loadingHuntId === hunt.id;
-
-            return (
-              <View
-                key={hunt.id}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: isCurrent ? colors.success : colors.border,
-                    shadowColor: isCurrent ? colors.success : '#000',
-                  },
-                ]}
-              >
-                <View style={styles.badgeRow}>
-                  <View style={[styles.badge, { backgroundColor: colors.info + '20' }]}>
-                    <ThemedCustomText variant="caption" color="info" weight="700">
-                      Active
-                    </ThemedCustomText>
-                  </View>
-                  <View style={[styles.badge, { backgroundColor: colors.secondary + '20' }]}>
-                    <ThemedCustomText variant="caption" color="secondary" weight="700">
-                      {hunt.rewardType}
-                    </ThemedCustomText>
-                  </View>
-                </View>
-
-                <ThemedCustomText variant="h3" color="text" weight="700" style={styles.cardTitle}>
-                  {hunt.title}
-                </ThemedCustomText>
-                <ThemedCustomText variant="body" color="text" style={styles.cardDesc}>
-                  {hunt.description}
-                </ThemedCustomText>
-
-                <View style={[styles.cardInfoRow, { borderTopColor: colors.border }]}>
-                  <View style={styles.infoCol}>
-                    <ThemedCustomText variant="caption" color="text" style={styles.infoLabel}>
-                      Clues / Tasks
-                    </ThemedCustomText>
-                    <ThemedCustomText variant="body" color="text" weight="600">
-                      {hunt.cluesCount} checkpoints
-                    </ThemedCustomText>
-                  </View>
-                  <View style={styles.infoCol}>
-                    <ThemedCustomText variant="caption" color="text" style={styles.infoLabel}>
-                      Potential Reward
-                    </ThemedCustomText>
-                    <ThemedCustomText variant="body" color="primary" weight="700">
-                      {rewardLabel(hunt)}
-                    </ThemedCustomText>
-                  </View>
-                </View>
-
-                <ThemedButton
-                  text={isCurrent ? 'View Hunt' : isLoading ? 'Joining...' : 'Join Hunt'}
-                  variant={isCurrent ? 'success' : 'primary'}
-                  size="md"
-                  fullWidth
-                  disabled={isLoading || (!isCurrent && loadingHuntId !== null)}
-                  loading={isLoading}
-                  onPress={() => {
-                    if (isCurrent) {
-                      router.push(`/details?huntId=${hunt.id}`);
-                    } else {
-                      handleJoinHunt(hunt);
-                    }
-                  }}
-                />
-              </View>
-            );
-          })}
-        </View>
       </ScrollView>
     </ThemedView>
   );
@@ -236,43 +152,25 @@ export default function HuntsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  contentContainer: { padding: 20, paddingBottom: 40 },
-  header: { marginBottom: 20 },
-  subtitle: { marginTop: 6, opacity: 0.8, fontSize: 15 },
-  statsBoard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
+  content: { padding: 16, gap: 16, paddingBottom: 40 },
+  subtitle: { opacity: 0.75, marginBottom: 8 },
+  statusCard: {
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 28,
-  },
-  statGroup: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  statItem: { alignItems: 'center', flex: 1, paddingVertical: 16 },
-  statDivider: { width: 1, height: 32, opacity: 0.5 },
-  statLabel: { opacity: 0.7 },
-  sectionTitle: { marginBottom: 16 },
-  listContainer: { gap: 20 },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 18,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  badge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
-  cardTitle: { marginBottom: 8 },
-  cardDesc: { opacity: 0.7, marginBottom: 16, fontSize: 14 },
-  cardInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    paddingTop: 12,
-    marginBottom: 16,
+    padding: 16,
     gap: 12,
   },
-  infoCol: { flex: 1 },
-  infoLabel: { opacity: 0.6 },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  divider: {
+    height: 1,
+    opacity: 0.5,
+  },
+  version: {
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });

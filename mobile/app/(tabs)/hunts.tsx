@@ -97,10 +97,6 @@ export default function HuntsScreen() {
           ))}
         </View>
 
-        <ThemedCustomText variant="h3" color="text" weight="700" style={styles.sectionTitle}>
-          Featured Hunts
-        </ThemedCustomText>
-
         <View style={styles.listContainer}>
           {hunts.map((hunt) => {
             const isCurrent = currentProgress?.hunt_id === hunt.id;
@@ -197,7 +193,6 @@ const styles = StyleSheet.create({
   statItem: { alignItems: 'center', flex: 1, paddingVertical: 16 },
   statDivider: { width: 1, height: 32, opacity: 0.5 },
   statLabel: { opacity: 0.7 },
-  sectionTitle: { marginBottom: 16 },
   listContainer: { gap: 20 },
   card: {
     borderRadius: 16,
