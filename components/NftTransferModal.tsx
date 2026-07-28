@@ -28,6 +28,9 @@ interface NftTransferModalProps {
 
 type TransferStep = "input" | "confirm" | "processing" | "success" | "error"
 
+import { useTransactionSigning } from "@/hooks/useTransactionSigning"
+import { TransactionSigningModal } from "@/components/TransactionSigningModal"
+
 export function NftTransferModal({
   nft,
   senderAddress,
@@ -40,6 +43,8 @@ export function NftTransferModal({
   const [step, setStep] = useState<TransferStep>("input")
   const [error, setError] = useState("")
   const [result, setResult] = useState<TransferResult | null>(null)
+
+  const signing = useTransactionSigning()
 
   if (!nft) return null
 
@@ -56,6 +61,36 @@ export function NftTransferModal({
       return
     }
     setError("")
+    
+    // Initiate standardized transaction signing flow
+    signing.initiateTransaction({
+      type: "transfer",
+      title: `Transfer NFT "${nft.name}"`,
+      description: `Sending NFT #${nft.id} to recipient address`,
+      recipient,
+      amount: 1,
+      assetSymbol: "NFT",
+      fee: "0.00001 XLM",
+      memo: memo || undefined,
+      metadata: {
+        nftId: nft.id,
+        nftName: nft.name,
+        rarity: nft.rarity || "Standard",
+      },
+      execute: async () => {
+        const transferResult = await transferNft({
+          nftId: nft.id,
+          recipientAddress: recipient,
+          senderAddress,
+          memo: memo || undefined,
+        })
+        setResult(transferResult)
+        setStep("success")
+        onTransferComplete?.(transferResult)
+        return { txHash: transferResult.txHash }
+      },
+    })
+
     setStep("confirm")
   }
 
@@ -229,6 +264,20 @@ export function NftTransferModal({
           )}
         </div>
       </DialogContent>
+      <TransactionSigningModal
+        isOpen={step === "confirm"}
+        onClose={() => setStep("input")}
+        signing={signing}
+        onSuccess={(txHash) => {
+          onTransferComplete?.({
+            success: true,
+            txHash,
+            nftId: nft.id,
+            to: recipient,
+          })
+          handleClose()
+        }}
+      />
     </Dialog>
   )
 }
