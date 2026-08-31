@@ -125,6 +125,15 @@ vi.mock("@/lib/logger", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+vi.mock("@/lib/streaks", () => ({
+  updatePlayerStreak: async () => ({
+    streak: { currentStreak: 1, longestStreak: 1, lastCompletedDate: "2026-01-01", streakBroken: false },
+    streakBroken: false,
+    previousStreakLength: 0,
+  }),
+  getPlayerStreak: async () => null,
+}))
+
 vi.mock("@sentry/nextjs", () => ({
   captureException: vi.fn(),
   captureEvent: vi.fn(),
@@ -228,6 +237,9 @@ const ROUTE_MANIFEST: RouteEntry[] = [
   { file: "v1/seasons/[id]/route.ts",               path: "/api/v1/seasons/[id]",               methods: ["GET", "POST", "PATCH"], auth: "public" },
   { file: "v1/seasons/archived/route.ts",           path: "/api/v1/seasons/archived",           methods: ["GET"],           auth: "public" },
   { file: "v1/seasons/badges/route.ts",             path: "/api/v1/seasons/badges",             methods: ["GET", "POST"],   auth: "public" },
+
+  // ── v1 / streaks ─────────────────────────────────────────────────────
+  { file: "v1/streaks/[address]/route.ts",          path: "/api/v1/streaks/[address]",          methods: ["GET"],           auth: "public" },
 
   // ── v1 / tags ────────────────────────────────────────────────────────
   { file: "v1/tags/route.ts",                       path: "/api/v1/tags",                       methods: ["GET", "POST"],   auth: "public" },

@@ -5,14 +5,16 @@ import { ValidationError } from "@/lib/api/errors"
 import { huntCompleteBodySchema } from "@hunty/types/api-schemas"
 import { getActiveSeason } from "@/lib/seasonStore"
 import { awardXp, XP_PER_HUNT } from "@/lib/battlePassStore"
-import { z from "zod"
+import { updatePlayerStreak } from "@/lib/streaks"
+import { z } from "zod"
 
 const paramsSchema = z.object({ id: z.string() })
 
 /**
  * POST /api/v1/hunts/[id]/complete
  * Register that a player address has completed a hunt.
- * Also awards battle pass XP for the active season.
+ * Also awards battle pass XP for the active season and updates the
+ * player's consecutive daily-completion streak.
  */
 export const POST = withValidation(
   { body: huntCompleteBodySchema, params: paramsSchema },
@@ -37,6 +39,15 @@ export const POST = withValidation(
       battlePass = awardXp(activeSeason.id, body.playerAddress, XP_PER_HUNT)
     }
 
-    return NextResponse.json({ success: true, battlePass })
+    // Update the player's consecutive daily-completion streak
+    const streakResult = await updatePlayerStreak(body.playerAddress)
+
+    return NextResponse.json({
+      success: true,
+      battlePass,
+      streak: streakResult.streak,
+      streakBroken: streakResult.streakBroken,
+      previousStreakLength: streakResult.previousStreakLength,
+    })
   }
 )
