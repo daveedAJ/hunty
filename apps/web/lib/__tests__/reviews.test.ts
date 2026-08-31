@@ -1,4 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
+
+vi.mock("@/lib/streaks", () => ({
+  updatePlayerStreak: vi.fn(async (address: string) => ({
+    streak: {
+      currentStreak: 1,
+      longestStreak: 1,
+      lastCompletedDate: "2026-01-15",
+      streakBroken: false,
+    },
+    streakBroken: false,
+    previousStreakLength: 0,
+  })),
+}))
+
 import {
   readReviewsSync,
   writeReviewsSync,
@@ -206,6 +220,21 @@ describe("Hunt Reviews System API Routes", () => {
 
       const completions = await readCompletions()
       expect(completions[100]["0xPlayerAddress"]).toBe(true)
+    })
+
+    it("should include streak data in the completion response", async () => {
+      const req = new Request("http://localhost/api/v1/hunts/100/complete", {
+        method: "POST",
+        body: JSON.stringify({ playerAddress: "0xPlayerAddress" }),
+      })
+      const res = await completePost(req, { params: Promise.resolve({ id: "100" }) })
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.streak).toBeDefined()
+      expect(body.streak.currentStreak).toBe(1)
+      expect(body.streak.longestStreak).toBe(1)
+      expect(body.streakBroken).toBe(false)
+      expect(body.previousStreakLength).toBe(0)
     })
   })
 

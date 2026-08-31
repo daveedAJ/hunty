@@ -38,12 +38,14 @@ import { RewardHistorySection } from "@/components/RewardHistorySection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayerProfileStats } from "@/hooks/usePlayerProfileStats";
+import { usePlayerStreak } from "@/hooks/usePlayerStreak";
 import { shortenAddress, WalletContext } from "@/lib/context/WalletContext";
 import { formatISOString } from "@/lib/dateUtils";
 import { getPlayerAttempts } from "@/lib/huntAttemptHistory";
 import { logger } from "@/lib/logger";
 import { getReferralStats } from "@/lib/referrals";
 import { fetchPlayerRewardHistory } from "@/lib/rewardHistory";
+import { Flame } from "lucide-react";
 import type { HuntAttemptRecord, ReferralStats } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -233,6 +235,7 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { stats: profileStats } = usePlayerProfileStats(publicKey);
+  const { streak: streakData, isLoading: streakLoading, error: streakError } = usePlayerStreak(publicKey);
   useEffect(() => {
     const reset = () => {
       setHunts([]);
@@ -411,6 +414,12 @@ export default function UserProfilePage() {
                 </CardContent>
               </Card>
             </section>
+
+            <StreakSection
+              streak={streakData}
+              isLoading={streakLoading}
+              streakError={streakError}
+            />
 
             <section aria-label="Player statistics" className="mt-6">
               <Card className="bg-[#ececfa] border border-white/40 shadow-md">
@@ -685,6 +694,77 @@ export default function UserProfilePage() {
         )}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Daily Streak Section
+// ---------------------------------------------------------------------------
+
+function StreakSection({
+  streak,
+  isLoading,
+  streakError,
+}: {
+  streak: import("@/lib/streaks").PlayerStreak | null;
+  isLoading: boolean;
+  streakError: string | null;
+}) {
+  const hasStreak = streak && streak.currentStreak > 0;
+
+  let statusText = "";
+  let statusTone = "text-slate-500";
+
+  if (streakError) {
+    statusText = "Unable to load streak";
+    statusTone = "text-red-500";
+  } else if (!streak || !hasStreak) {
+    statusText = "Complete a hunt today to start your streak!";
+    statusTone = "text-slate-500";
+  } else if (streak.streakBroken) {
+    statusText = "Previous streak was broken — keep going!";
+    statusTone = "text-amber-600";
+  } else if (streak.currentStreak >= 7) {
+    statusText = `${streak.currentStreak} days — on fire!`;
+    statusTone = "text-emerald-600";
+  } else {
+    statusText = `${streak.currentStreak} day${streak.currentStreak > 1 ? "s" : ""} in a row`;
+    statusTone = "text-indigo-600";
+  }
+
+  return (
+    <section aria-label="Daily streak" className="mt-6">
+      <Card className="bg-[#ececfa] border border-white/40 shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-amber-200 bg-amber-50">
+              <Flame className="h-5 w-5 text-amber-600" />
+            </span>
+            <div>
+              <CardTitle className="text-lg md:text-xl font-semibold text-slate-900">
+                Daily Streak
+              </CardTitle>
+              <CardDescription>
+                Consecutive days you have completed a hunt.
+              </CardDescription>
+            </div>
+          </div>
+          {streak && hasStreak && (
+            <div className="text-right">
+              <div className="text-2xl font-bold text-slate-900">
+                {streak.currentStreak}
+              </div>
+              <div className="text-xs text-slate-500">
+                Longest: {streak.longestStreak}
+              </div>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <p className={`text-sm font-medium ${statusTone}`}>{statusText}</p>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
