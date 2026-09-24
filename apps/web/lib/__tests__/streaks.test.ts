@@ -141,6 +141,21 @@ describe("computeStreakUpdate", () => {
       };
       const result = computeStreakUpdate(prev, TODAY);
       expect(result.streak.currentStreak).toBe(1);
+      expect(result.streak.longestStreak).toBe(1);
+      expect(result.streakBroken).toBe(false);
+      expect(result.previousStreakLength).toBe(0);
+    });
+
+    it("preserves a prior best streak when a stale zero-streak record is restarted", () => {
+      const prev: PlayerStreak = {
+        currentStreak: 0,
+        longestStreak: 7,
+        lastCompletedDate: "2025-12-30",
+        streakBroken: true,
+      };
+      const result = computeStreakUpdate(prev, TODAY);
+      expect(result.streak.currentStreak).toBe(1);
+      expect(result.streak.longestStreak).toBe(7);
       expect(result.streakBroken).toBe(false);
       expect(result.previousStreakLength).toBe(0);
     });
