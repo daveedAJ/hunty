@@ -84,16 +84,16 @@ export function computeStreakUpdate(
   prev: PlayerStreak | null,
   today: string,
 ): StreakUpdateResult {
-  if (!prev || prev.lastCompletedDate === null) {
+  if (!prev || prev.lastCompletedDate === null || prev.currentStreak <= 0) {
     return {
       streak: {
         currentStreak: 1,
-        longestStreak: 1,
+        longestStreak: Math.max(prev?.longestStreak ?? 0, 1),
         lastCompletedDate: today,
         streakBroken: false,
       },
       streakBroken: false,
-      previousStreakLength: 0,
+      previousStreakLength: prev?.currentStreak ?? 0,
     };
   }
 
