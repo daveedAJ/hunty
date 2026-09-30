@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/card";
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePlayerProfileStats } from "@/hooks/usePlayerProfileStats";
+import { usePlayerStreak } from "@/hooks/usePlayerStreak";
 import { shortenAddress, WalletContext } from "@/lib/context/WalletContext";
 import { getAllHunts } from "@/lib/huntStore";
 import { getPlayerAttempts } from "@/lib/huntAttemptHistory";
 import { logger } from "@/lib/logger";
 import { getReferralStats } from "@/lib/referrals";
 import { fetchPlayerRewardHistory } from "@/lib/rewardHistory";
+import { Flame } from "lucide-react";
 import type { HuntAttemptRecord, ReferralStats, StoredHunt } from "@/lib/types";
 
 import { StatPill } from "./components/StatPill";
@@ -58,6 +60,7 @@ export default function UserProfilePage() {
 
   const { favorites, isLoaded: isFavoritesLoaded } = useFavorites();
   const { stats: profileStats } = usePlayerProfileStats(publicKey);
+  const { streak: streakData, isLoading: streakLoading, error: streakError } = usePlayerStreak(publicKey);
 
   useEffect(() => {
     if (!connected || !publicKey) {
@@ -225,6 +228,12 @@ export default function UserProfilePage() {
                 </CardContent>
               </Card>
             </section>
+
+            <StreakSection
+              streak={streakData}
+              isLoading={streakLoading}
+              streakError={streakError}
+            />
 
             <section aria-label="Player statistics" className="mt-6">
               <Card className="bg-[#ececfa] border border-white/40 shadow-md">
@@ -428,3 +437,60 @@ export default function UserProfilePage() {
     </div>
   );
                       }
+
+function StreakSection({
+  streak,
+  isLoading,
+  streakError,
+}: {
+  streak: import("@/lib/streaks").PlayerStreak | null;
+  isLoading: boolean;
+  streakError: string | null;
+}) {
+  const hasStreak = streak !== null && streak.currentStreak > 0;
+  const statusText = streakError
+    ? "Unable to load streak"
+    : !streak || !hasStreak
+      ? "Complete a hunt today to start your streak!"
+      : streak.streakBroken
+        ? "Previous streak was broken. Keep going!"
+        : `${streak.currentStreak} day${streak.currentStreak === 1 ? "" : "s"} in a row`;
+  const statusTone = streakError
+    ? "text-red-500"
+    : streak?.streakBroken
+      ? "text-amber-600"
+      : hasStreak
+        ? "text-indigo-600"
+        : "text-slate-500";
+
+  return (
+    <section aria-label="Daily streak" className="mt-6">
+      <Card className="bg-[#ececfa] border border-white/40 shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-amber-200 bg-amber-50">
+              <Flame className="h-5 w-5 text-amber-600" />
+            </span>
+            <div>
+              <CardTitle className="text-lg md:text-xl font-semibold text-slate-900">
+                Daily Streak
+              </CardTitle>
+              <CardDescription>Consecutive days you have completed a hunt.</CardDescription>
+            </div>
+          </div>
+          {isLoading ? (
+            <span className="text-sm text-slate-500">Loading...</span>
+          ) : streak && hasStreak ? (
+            <div className="text-right">
+              <div className="text-2xl font-bold text-slate-900">{streak.currentStreak}</div>
+              <div className="text-xs text-slate-500">Longest: {streak.longestStreak}</div>
+            </div>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          <p className={`text-sm font-medium ${statusTone}`}>{statusText}</p>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
